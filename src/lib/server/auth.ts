@@ -1,81 +1,181 @@
-import type { RequestEvent } from '@sveltejs/kit';
+import jwt from 'jsonwebtoken';
+import { db } from './db';
+import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
-import { sha256 } from '@oslojs/crypto/sha2';
-import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
-import { db } from '$lib/server/db';
-import * as table from '$lib/server/db/schema';
+import type { RequestEvent } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
-const DAY_IN_MS = 1000 * 60 * 60 * 24;
-
-export const sessionCookieName = 'auth-session';
-
-export function generateSessionToken() {
-	const bytes = crypto.getRandomValues(new Uint8Array(18));
-	const token = encodeBase64url(bytes);
-	return token;
+export interface JWTPayload {
+	userId: string;
+	email: string;
+	name: string;
+	image?: string;
+	iat?: number;
+	exp?: number;
 }
 
-export async function createSession(token: string, userId: string) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const session: table.Session = {
-		id: sessionId,
-		userId,
-		expiresAt: new Date(Date.now() + DAY_IN_MS * 30)
-	};
-	await db.insert(table.session).values(session);
-	return session;
+export interface AuthUser {
+	id: string;
+	name: string;
+	email: string;
+	image?: string;
+	email_verified: boolean;
 }
 
-export async function validateSessionToken(token: string) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const [result] = await db
-		.select({
-			// Adjust user table here to tweak returned data
-			user: { id: table.user.id, username: table.user.username },
-			session: table.session
-		})
-		.from(table.session)
-		.innerJoin(table.user, eq(table.session.userId, table.user.id))
-		.where(eq(table.session.id, sessionId));
+// Token expiration time (30 days)
+const TOKEN_EXPIRY = 30 * 24 * 60 * 60; // 30 days in seconds
 
-	if (!result) {
-		return { session: null, user: null };
-	}
-	const { session, user } = result;
-
-	const sessionExpired = Date.now() >= session.expiresAt.getTime();
-	if (sessionExpired) {
-		await db.delete(table.session).where(eq(table.session.id, session.id));
-		return { session: null, user: null };
-	}
-
-	const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15;
-	if (renewSession) {
-		session.expiresAt = new Date(Date.now() + DAY_IN_MS * 30);
-		await db
-			.update(table.session)
-			.set({ expiresAt: session.expiresAt })
-			.where(eq(table.session.id, session.id));
-	}
-
-	return { session, user };
-}
-
-export type SessionValidationResult = Awaited<ReturnType<typeof validateSessionToken>>;
-
-export async function invalidateSession(sessionId: string) {
-	await db.delete(table.session).where(eq(table.session.id, sessionId));
-}
-
-export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
-	event.cookies.set(sessionCookieName, token, {
-		expires: expiresAt,
-		path: '/'
+/**
+ * Creates a JWT token for the user
+ */
+export function createJWT(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+	return jwt.sign(payload, env.JWT_SECRET, {
+		expiresIn: TOKEN_EXPIRY,
 	});
 }
 
-export function deleteSessionTokenCookie(event: RequestEvent) {
-	event.cookies.delete(sessionCookieName, {
-		path: '/'
+/**
+ * Verifies and decodes a JWT token
+ */
+export function verifyJWT(token: string): JWTPayload | null {
+	try {
+		return jwt.verify(token, env.JWT_SECRET) as JWTPayload;
+	} catch (error) {
+		console.error('JWT verification failed:', error);
+		return null;
+	}
+}
+
+/**
+ * Creates a user session JWT token
+ */
+export function createUserSession(user: AuthUser): string {
+	return createJWT({
+		userId: user.id,
+		email: user.email,
+		name: user.name,
+		image: user.image,
+	});
+}
+
+/**
+ * Validates a user session and syncs with database
+ */
+export async function validateUserSession(token: string): Promise<{ user: AuthUser | null; valid: boolean }> {
+	const payload = verifyJWT(token);
+
+	if (!payload) {
+		return { user: null, valid: false };
+	}
+
+	try {
+		// Check if user exists in database
+		const [dbUser] = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, payload.userId))
+			.limit(1);
+
+		if (!dbUser) {
+			return { user: null, valid: false };
+		}
+
+		// Create user object from database
+		const user: AuthUser = {
+			id: dbUser.id,
+			name: dbUser.name,
+			email: dbUser.email,
+			email_verified: dbUser.email_verified,
+			image: dbUser.img || undefined,
+		};
+
+		return { user, valid: true };
+	} catch (error) {
+		console.error('Database validation failed:', error);
+		return { user: null, valid: false };
+	}
+}
+
+/**
+ * Syncs user data with database (creates or updates user)
+ */
+export async function syncUserWithDatabase(userData: AuthUser): Promise<void> {
+	try {
+		const [existingUser] = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, userData.id))
+			.limit(1);
+
+		if (existingUser) {
+			// Update existing user
+			await db
+				.update(users)
+				.set({
+					name: userData.name,
+					email: userData.email,
+					img: userData.image || null,
+					email_verified: true,
+				})
+				.where(eq(users.id, userData.id));
+		} else {
+			// Create new user
+			await db.insert(users).values({
+				id: userData.id,
+				name: userData.name,
+				email: userData.email,
+				img: userData.image || null,
+				email_verified: true,
+			});
+		}
+	} catch (error) {
+		console.error('Failed to sync user with database:', error);
+		throw error;
+	}
+}
+
+/**
+ * Extracts JWT token from Authorization header or cookies
+ */
+export function extractToken(event: { request?: Request; cookies?: { get: (name: string) => string | undefined } }): string | null {
+	// Try Authorization header first
+	if (event.request) {
+		const authHeader = event.request.headers.get('Authorization');
+		if (authHeader?.startsWith('Bearer ')) {
+			return authHeader.substring(7);
+		}
+	}
+
+	// Try cookies
+	if (event.cookies?.get) {
+		return event.cookies.get('auth-token') || null;
+	}
+
+	return null;
+}
+
+/**
+ * Sets JWT token in cookie
+ */
+export function setAuthTokenCookie(event: RequestEvent, token: string): void {
+	event.cookies.set('auth-token', token, {
+		path: '/',
+		expires: new Date(Date.now() + TOKEN_EXPIRY * 1000), // Convert to milliseconds
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'lax'
+	});
+}
+
+/**
+ * Clears JWT token from cookie
+ */
+export function clearAuthTokenCookie(event: RequestEvent): void {
+	event.cookies.set('auth-token', '', {
+		path: '/',
+		expires: new Date(0),
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: 'lax'
 	});
 }

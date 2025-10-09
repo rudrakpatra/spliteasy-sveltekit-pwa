@@ -2,24 +2,25 @@ import type { Handle } from '@sveltejs/kit';
 import * as auth from '$lib/server/auth';
 
 const handleAuth: Handle = async ({ event, resolve }) => {
-	const sessionToken = event.cookies.get(auth.sessionCookieName);
+	// Try to get JWT token from cookies
+	const token = event.cookies.get('auth-token');
 
-	if (!sessionToken) {
+	if (!token) {
 		event.locals.user = null;
-		event.locals.session = null;
 		return resolve(event);
 	}
 
-	const { session, user } = await auth.validateSessionToken(sessionToken);
+	// Validate JWT token
+	const { user, valid } = await auth.validateUserSession(token);
 
-	if (session) {
-		auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
+	if (valid && user) {
+		event.locals.user = user;
 	} else {
-		auth.deleteSessionTokenCookie(event);
+		event.locals.user = null;
+		// Clear invalid token
+		auth.clearAuthTokenCookie(event);
 	}
 
-	event.locals.user = user;
-	event.locals.session = session;
 	return resolve(event);
 };
 
