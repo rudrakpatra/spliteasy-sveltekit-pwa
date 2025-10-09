@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { db } from './db';
 import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
-import type { RequestEvent } from '@sveltejs/kit';
+import { error, type RequestEvent } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 export interface JWTPayload {
@@ -178,4 +178,34 @@ export function clearAuthTokenCookie(event: RequestEvent): void {
 		secure: process.env.NODE_ENV === 'production',
 		sameSite: 'lax'
 	});
+}
+
+/**
+ * Throws an error if the user is not authenticated
+ * @param event - The request event
+ * @returns The authenticated user
+ */
+export function requireAuth(event: RequestEvent): AuthUser {
+	if (!event.locals.user) {
+		throw error(401, {
+			message: 'Unauthorized',
+		});
+	}
+	return event.locals.user;
+}
+
+/**
+ * Throws an error if the provided API key is invalid
+ * @param event - The request event
+ * @param validKey - The valid API key
+ */
+export function requireApiKey(event: RequestEvent, validKey: string): void {
+	const authHeader = event.request.headers.get('Authorization');
+	const providedKey = authHeader?.replace('Bearer ', '');
+
+	if (providedKey !== validKey) {
+		throw error(401, {
+			message: 'Invalid API key',
+		});
+	}
 }

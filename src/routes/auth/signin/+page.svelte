@@ -29,31 +29,6 @@
 				<p class="text-muted-foreground">Sign in to get started</p>
 			</div>
 
-			{#if user}
-				<div>
-					<a href={redirectUrl}>
-						<Button class="w-full" variant="outline">
-							<Avatar.Avatar class="h-6 w-6">
-								<Avatar.AvatarImage src={user.image || ''} />
-								<Avatar.AvatarFallback class="bg-primary text-xs">
-									{#if user.name}
-										{user.name
-											.split(' ')
-											.map((n) => n[0])
-											.join('')}
-									{:else if user.email}
-										{user.email[0].toUpperCase()}
-									{:else}
-										U
-									{/if}
-								</Avatar.AvatarFallback>
-							</Avatar.Avatar>
-							Continue as {user.name || user.email}
-						</Button>
-					</a>
-				</div>
-			{/if}
-
 			<!-- Sign In Card -->
 			<Card>
 				<CardHeader class="text-center">
@@ -68,6 +43,31 @@
 					{:else if error === 'invalid_state'}
 						<div class="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
 							Invalid request. Please try again.
+						</div>
+					{/if}
+
+					{#if user}
+						<div>
+							<a href={redirectUrl}>
+								<Button class="w-full" variant="outline">
+									<Avatar.Avatar class="h-6 w-6">
+										<Avatar.AvatarImage src={user.image || ''} />
+										<Avatar.AvatarFallback class="bg-primary text-xs">
+											{#if user.name}
+												{user.name
+													.split(' ')
+													.map((n) => n[0])
+													.join('')}
+											{:else if user.email}
+												{user.email[0].toUpperCase()}
+											{:else}
+												U
+											{/if}
+										</Avatar.AvatarFallback>
+									</Avatar.Avatar>
+									Continue as {user.name || user.email}
+								</Button>
+							</a>
 						</div>
 					{/if}
 

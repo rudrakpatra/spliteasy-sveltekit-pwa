@@ -1,4 +1,4 @@
-// src/routes/+layout.server.ts
+// src/routes/auth/+layout.server.ts
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
