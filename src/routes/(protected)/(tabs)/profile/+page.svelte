@@ -1,7 +1,17 @@
 <script lang="ts">
+	import * as Avatar from '$lib/components/ui/avatar';
+	import X from '@lucide/svelte/icons/x';
 	import type { PageData } from './$types';
+	import Check from '@lucide/svelte/icons/check';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Label } from '$lib/components/ui/label';
+	import { Input, InputGroup, InputGroupButton } from '$lib/components/ui/input-group';
+	import InputGroupAddon from '$lib/components/ui/input-group/input-group-addon.svelte';
+	import { useCurrencySuggestions } from '$lib/hooks/use-currency-suggestions';
 
 	let { data }: { data: PageData } = $props();
+
+	const currencySuggestions = useCurrencySuggestions();
 </script>
 
 <svelte:head>
@@ -15,7 +25,10 @@
 		<div class="space-y-6">
 			<div class="flex items-center space-x-4">
 				{#if data.user.image}
-					<img src={data.user.image} alt={data.user.name} class="h-20 w-20 rounded-full" />
+					<Avatar.Root class="block size-20 text-4xl">
+						<Avatar.Image src={data.user.image} alt={data.user.name} />
+						<Avatar.Fallback>{data.user.name.charAt(0)}</Avatar.Fallback>
+					</Avatar.Root>
 				{/if}
 				<div>
 					<h2 class="text-xl font-semibold">{data.user.name}</h2>
@@ -24,20 +37,23 @@
 			</div>
 
 			<div class="space-y-4">
-				<div>
-					<label for="user-id" class="text-muted-foreground text-sm font-medium">User ID</label>
-					<p id="user-id" class="bg-muted mt-1 rounded p-2 font-mono text-sm">{data.user.id}</p>
+				<div class="space-y-2">
+					<Label for="user-id">User ID</Label>
+					<InputGroup>
+						<Input id="user-id" value={data.user.id} disabled />
+						<InputGroupAddon align="inline-end">
+							<InputGroupButton>Copy</InputGroupButton>
+						</InputGroupAddon>
+					</InputGroup>
 				</div>
 
-				<div>
-					<label for="email-status" class="text-muted-foreground text-sm font-medium"
-						>Email Status</label
-					>
-					<p id="email-status" class="mt-1 flex items-center gap-2">
+				<div class="space-y-2">
+					<Label for="email-status">Email Status</Label>
+					<p id="email-status">
 						{#if data.user.email_verified}
-							<span class="text-green-600">✓ Verified</span>
+							<Badge variant="default"><Check /> Verified</Badge>
 						{:else}
-							<span class="text-yellow-600">○ Unverified</span>
+							<Badge variant="destructive"><X />Unverified</Badge>
 						{/if}
 					</p>
 				</div>
@@ -49,6 +65,17 @@
 					<p>• Signed in with Google OAuth</p>
 					<p>• Account created through SplitEasy</p>
 					<p>• Profile managed securely</p>
+				</div>
+			</div>
+
+			<div class="border-t pt-4">
+				<h3 class="mb-2 text-lg font-medium">Currency Suggestions</h3>
+				<div class="text-muted-foreground space-y-1 text-sm">
+					{#if $currencySuggestions.data}
+						{#each $currencySuggestions.data as currency}
+							<p>• {currency.currency}</p>
+						{/each}
+					{/if}
 				</div>
 			</div>
 		</div>

@@ -1,17 +1,18 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { createQuery } from '@tanstack/svelte-query';
+	import { trpc } from '$lib/trpc/client';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import UsersGroup from '@tabler/icons-svelte/icons/users-group';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+	import { page } from '$app/state';
 
 	let { data }: { data: PageData } = $props();
-
-	const query = createQuery(() => ({
-		queryKey: ['groups'],
-		queryFn: async () => (await fetch('/api/groups')).json()
-	}));
+	const api = trpc(page, data.queryClient);
+	const groupsQuery = api.groups.list.createQuery(undefined, {
+		// initialData: data.groups, //enable this get prefetched data
+		refetchInterval: Infinity
+	});
 </script>
 
 <svelte:head>
@@ -23,19 +24,19 @@
 		<h1 class="mb-6 text-2xl font-bold">Groups</h1>
 
 		<div class="space-y-6">
-			{#if query.isPending}
+			{#if $groupsQuery.isPending}
 				<div class="flex justify-center py-8">
 					<p class="text-muted-foreground">Loading groups...</p>
 				</div>
-			{:else if query.isError}
+			{:else if $groupsQuery.isError}
 				<div class="rounded-lg bg-red-50 p-4">
-					<p class="text-red-500">Error: {query.error.message}</p>
-					<Button onclick={() => query.refetch()} class="mt-2" variant="outline" size="sm">
+					<p class="text-red-500">Error: {$groupsQuery.error.message}</p>
+					<Button onclick={() => $groupsQuery.refetch()} class="mt-2" variant="outline" size="sm">
 						Retry
 					</Button>
 				</div>
-			{:else if query.data?.groupsData && query.data.groupsData.length > 0}
-				{#each query.data.groupsData as group (group.id)}
+			{:else if $groupsQuery.data?.length > 0}
+				{#each $groupsQuery.data as group (group.id)}
 					<div class="flex items-center space-x-4">
 						<img src={group.img} alt={group.name} class="h-20 w-20 rounded-full" />
 						<div>
@@ -45,7 +46,6 @@
 					</div>
 				{/each}
 			{:else}
-				<!-- Empty State -->
 				<Empty.Root>
 					<Empty.Header>
 						<Empty.Media variant="icon">

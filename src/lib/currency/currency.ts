@@ -1,5 +1,4 @@
-import { createQuery } from '@tanstack/svelte-query';
-import { CURRENCY_MAP, COUNTRY_MAP, DEFAULT_CURRENCY, type CurrencyCode, type CountryCode, type Currency, CURRENCY_ENUM } from './currency-codes';
+import { CURRENCY_MAP, COUNTRY_MAP, type CountryCode, type Currency, CURRENCY_ENUM } from './currency-codes';
 
 /**
  * IP-based detection 
@@ -8,6 +7,7 @@ import { CURRENCY_MAP, COUNTRY_MAP, DEFAULT_CURRENCY, type CurrencyCode, type Co
  */
 async function getLocationFromIP(): Promise<Currency | null> {
     try {
+        console.warn("Requesting ipapi.co/json/")
         const response = await fetch('https://ipapi.co/json/');
         if (response.ok) {
             const { country_code, currency } = await response.json();
@@ -23,7 +23,7 @@ async function getLocationFromIP(): Promise<Currency | null> {
  * pros (most accurate)
  * cons (requires user permission)
  */
-async function getCurrecnyFromGeolocation(): Promise<Currency | null> {
+async function getCurrencyFromGeolocation(): Promise<Currency | null> {
     try {
         if ('geolocation' in navigator) {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -35,6 +35,7 @@ async function getCurrecnyFromGeolocation(): Promise<Currency | null> {
 
             const { latitude, longitude } = position.coords;
 
+            console.warn("Requesting bigdatacloud.net/data/reverse-geocode-client")
             const response = await fetch(
                 `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
             );
@@ -72,26 +73,29 @@ function detectCurrencyByLanguage(): Currency | null {
     }
     return null;
 }
-
 /**
  * Main currency detection function
- * 
+ * Returns an array of suggested currencies based on multiple detection strategies
  */
-export async function getCurrencySuggestions(): Promise<Set<Currency>> {
-    const suggestions: Set<Currency> = new Set();
+export async function getCurrencySuggestions(): Promise<Currency[]> {
+    const suggestions = new Map<string, Currency>(); // Use Map for deduplication by code
 
     // Strategy 1: Try geolocation first (most accurate)
     try {
-        const geoCurrency = await getCurrecnyFromGeolocation()
-        geoCurrency && suggestions.add(geoCurrency);
+        const geoCurrency = await getCurrencyFromGeolocation();
+        if (geoCurrency) {
+            suggestions.set(geoCurrency.code, geoCurrency);
+        }
     } catch (error) {
         console.warn('Geolocation detection failed:', error);
     }
 
     // Strategy 2: Try IP-based detection
     try {
-        const ipCurrency = await getLocationFromIP()
-        ipCurrency && suggestions.add(ipCurrency);
+        const ipCurrency = await getLocationFromIP();
+        if (ipCurrency && !suggestions.has(ipCurrency.code)) {
+            suggestions.set(ipCurrency.code, ipCurrency);
+        }
     } catch (error) {
         console.warn('IP detection failed:', error);
     }
@@ -99,20 +103,11 @@ export async function getCurrencySuggestions(): Promise<Set<Currency>> {
     // Strategy 3: Try browser language detection
     try {
         const langCurrency = detectCurrencyByLanguage();
-        langCurrency && suggestions.add(langCurrency);
+        if (langCurrency && !suggestions.has(langCurrency.code)) {
+            suggestions.set(langCurrency.code, langCurrency);
+        }
     } catch (error) {
         console.warn('Language detection failed:', error);
     }
-
-    return suggestions;
+    return Array.from(suggestions.values());
 }
-
-// Svelte 5 runes style reactive variables for currency state
-export const useCurrencySuggestions = () => {
-    return createQuery(() => ({
-        queryKey: ['currency', 'locale'],
-        queryFn: getCurrencySuggestions,
-        initialData: new Set<Currency>(),
-        staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    }));
-};

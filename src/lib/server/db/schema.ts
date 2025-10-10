@@ -13,14 +13,15 @@ import {
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
 import type { CurrencyCode } from '$lib/currency/currency-codes';
+import type { GoogleUser } from '$lib/server/google-oauth';
 
 // UsersTable
 export const users = pgTable('users', {
-  id: varchar('id', { length: 256 }).primaryKey(),
-  name: varchar('name', { length: 128 }).notNull(),
-  email: varchar('email', { length: 256 }).notNull().unique(),
-  email_verified: boolean('email_verified').notNull().default(false),
-  img: text('img'),
+  id: varchar('id', { length: 256 }).$type<GoogleUser['sub']>().primaryKey(),
+  name: varchar('name', { length: 128 }).$type<GoogleUser['name']>().notNull(),
+  email: varchar('email', { length: 256 }).$type<GoogleUser['email']>().notNull().unique(),
+  email_verified: boolean('email_verified').$type<GoogleUser['email_verified']>().notNull().default(false),
+  img: text('img').$type<GoogleUser['picture']>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
