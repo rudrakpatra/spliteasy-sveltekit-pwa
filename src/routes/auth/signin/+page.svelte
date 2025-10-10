@@ -19,20 +19,14 @@
 	let error = page.url.searchParams.get('error');
 </script>
 
-<div class="bg-background min-h-screen">
+<div class="bg-background flex min-h-screen flex-col">
 	<!-- Main Content -->
-	<div class="container mx-auto p-4">
-		<div class="mx-auto max-w-xl space-y-8">
-			<!-- Welcome Section -->
-			<div class="text-center">
-				<h1 class="text-foreground mb-2 text-3xl font-bold">Welcome to Split Easy</h1>
-				<p class="text-muted-foreground">Sign in to get started</p>
-			</div>
-
+	<main class="container mx-auto grid flex-1 place-content-center space-y-4 p-4 text-center">
+		<div class="min-w-xs mx-auto max-w-xl space-y-8">
 			<!-- Sign In Card -->
 			<Card>
 				<CardHeader class="text-center">
-					<CardTitle>Sign In</CardTitle>
+					<CardTitle>Sign In to SplitEasy</CardTitle>
 					<CardDescription>Choose your preferred sign-in method</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
@@ -80,5 +74,5 @@
 				</CardContent>
 			</Card>
 		</div>
-	</div>
+	</main>
 </div>

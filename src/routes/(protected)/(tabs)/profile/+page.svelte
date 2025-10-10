@@ -23,7 +23,9 @@
 		<h1 class="mb-6 text-2xl font-bold">Profile</h1>
 
 		<div class="space-y-6">
-			<div class="flex items-center space-x-4">
+			<div
+				class="flex flex-col items-center space-y-2 text-center md:flex-row md:space-x-4 md:text-left"
+			>
 				{#if data.user.image}
 					<Avatar.Root class="block size-20 text-4xl">
 						<Avatar.Image src={data.user.image} alt={data.user.name} />

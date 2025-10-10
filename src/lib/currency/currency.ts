@@ -8,10 +8,10 @@ import { withTimeout } from '$lib/utils';
 async function getLocationFromIP(): Promise<Currency | null> {
     try {
         console.warn("Requesting ipapi.co/json/")
-        const response = await fetch('https://ipapi.co/json/');
+        const response = await withTimeout(fetch('https://ipapi.co/json/'), 2000);
         if (response.ok) {
             const { country_code, currency } = await response.json();
-            console.warn("Response ipapi.co/json/", { country_code, currency })
+            console.info("Response ipapi.co/json/", { country_code, currency })
             return COUNTRY_MAP.get(country_code) || CURRENCY_MAP.get(currency) || null;
         }
     } catch (error) {
@@ -37,14 +37,14 @@ async function getCurrencyFromGeolocation(): Promise<Currency | null> {
             const { latitude, longitude } = position.coords;
 
             console.warn("Requesting bigdatacloud.net/data/reverse-geocode-client")
-            const response = await fetch(
+            const response = await withTimeout(fetch(
                 `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-            );
+            ), 2000);
 
             if (response.ok) {
                 const data = await response.json();
-                console.warn("Response bigdatacloud.net/data/reverse-geocode-client", data)
-                return COUNTRY_MAP.get(data.countryCode) || null;
+                console.info("Response bigdatacloud.net/data/reverse-geocode-client", data)
+                return COUNTRY_MAP.get(data.countryName) || null;
             }
         }
     } catch (error) {
@@ -80,36 +80,21 @@ function detectCurrencyByLanguage(): Currency | null {
  * Returns an array of suggested currencies based on multiple detection strategies
  */
 export async function getCurrencySuggestions(): Promise<Currency[]> {
+    const promises = [
+        getCurrencyFromGeolocation(),
+        getLocationFromIP(),
+        Promise.resolve(detectCurrencyByLanguage()),
+    ];
+
+    const results = await Promise.all(promises);
+
     const suggestions = new Map<string, Currency>(); // Use Map for deduplication by code
 
-    // Strategy 1: Try geolocation first (most accurate)
-    try {
-        const geoCurrency = await withTimeout(getCurrencyFromGeolocation(), 2000);
-        if (geoCurrency) {
-            suggestions.set(geoCurrency.code, geoCurrency);
+    results.forEach(result => {
+        if (result && !suggestions.has(result.code)) {
+            suggestions.set(result.code, result);
         }
-    } catch (error) {
-        console.warn('Geolocation detection failed:', error);
-    }
+    });
 
-    // Strategy 2: Try IP-based detection
-    try {
-        const ipCurrency = await withTimeout(getLocationFromIP(), 2000);
-        if (ipCurrency && !suggestions.has(ipCurrency.code)) {
-            suggestions.set(ipCurrency.code, ipCurrency);
-        }
-    } catch (error) {
-        console.warn('IP detection failed:', error);
-    }
-
-    // Strategy 3: Try browser language detection
-    try {
-        const langCurrency = detectCurrencyByLanguage();
-        if (langCurrency && !suggestions.has(langCurrency.code)) {
-            suggestions.set(langCurrency.code, langCurrency);
-        }
-    } catch (error) {
-        console.warn('Language detection failed:', error);
-    }
     return Array.from(suggestions.values());
 }

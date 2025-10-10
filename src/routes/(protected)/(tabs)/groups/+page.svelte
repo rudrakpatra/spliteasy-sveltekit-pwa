@@ -53,6 +53,9 @@
 						</a>
 					{/each}
 				</div>
+				<section class="fixed bottom-20 right-4">
+					<Button href="/group/add" variant="default">Create Group</Button>
+				</section>
 			{:else}
 				<Empty.Root>
 					<Empty.Header>

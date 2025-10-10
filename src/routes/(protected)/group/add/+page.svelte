@@ -18,10 +18,10 @@
 	const utils = api.createUtils();
 
 	// Setup mutation
-	const createGroup = api.groups.create.createMutation({
-		onSuccess: () => {
-			utils.groups.list.invalidate();
-			goto('/groups');
+	const createGroup = api.group.create.createMutation({
+		onSuccess: (group) => {
+			utils.group.list.invalidate();
+			goto(`/groups/${group.id}`);
 		},
 		onError: (error) => {
 			console.error('Failed to create group:', error);
