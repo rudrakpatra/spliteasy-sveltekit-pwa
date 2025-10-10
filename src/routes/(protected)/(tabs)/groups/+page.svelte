@@ -7,6 +7,7 @@
 	import UsersGroup from '@tabler/icons-svelte/icons/users-group';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import { page } from '$app/state';
+	import Plus from '@tabler/icons-svelte/icons/plus';
 
 	let { data }: { data: PageData } = $props();
 	const api = trpc(page, data.queryClient);
@@ -22,8 +23,10 @@
 
 <div class="container mx-auto max-w-2xl px-4 py-8">
 	<div class="bg-card rounded-lg border p-6 shadow-sm">
-		<h1 class="mb-6 text-2xl font-bold">Groups</h1>
-
+		<div class="flex justify-between">
+			<h1 class="mb-6 text-2xl font-bold">Groups</h1>
+			<Button href="/group/add" variant="ghost">Add <Plus class="h-4 w-4" /></Button>
+		</div>
 		<div class="space-y-6">
 			{#if $groupsQuery.isPending}
 				<div class="flex justify-center py-8">
@@ -53,9 +56,6 @@
 						</a>
 					{/each}
 				</div>
-				<section class="fixed bottom-20 right-4">
-					<Button href="/group/add" variant="default">Create Group</Button>
-				</section>
 			{:else}
 				<Empty.Root>
 					<Empty.Header>

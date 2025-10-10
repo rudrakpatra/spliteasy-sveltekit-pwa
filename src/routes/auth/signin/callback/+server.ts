@@ -5,6 +5,8 @@ import { users } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { createUserSession, setAuthTokenCookie } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
+import { emailSchema } from '$lib/schemas/email';
+import { userIdSchema } from '$lib/schemas/user';
 
 export async function GET(event: RequestEvent): Promise<Response> {
     const code = event.url.searchParams.get('code');
@@ -60,12 +62,13 @@ export async function GET(event: RequestEvent): Promise<Response> {
             headers: { Authorization: `Bearer ${tokens.accessToken()}` }
         });
         const googleUser: GoogleUser = await response.json();
-
+        const verifieduserId = userIdSchema.decode(googleUser.sub);
+        const verifiedEmail = emailSchema.decode(googleUser.email);
         // Upsert user in database
         const [existingUser] = await db
             .select()
             .from(users)
-            .where(eq(users.email, googleUser.email))
+            .where(eq(users.email, verifiedEmail))
             .limit(1);
 
         if (existingUser) {
@@ -78,9 +81,10 @@ export async function GET(event: RequestEvent): Promise<Response> {
                 })
                 .where(eq(users.id, existingUser.id));
         } else {
+
             await db.insert(users).values({
-                id: googleUser.sub,
-                email: googleUser.email,
+                id: verifieduserId,
+                email: verifiedEmail,
                 name: googleUser.name,
                 img: googleUser.picture,
                 email_verified: googleUser.email_verified
@@ -89,11 +93,12 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
         // Create session
         const sessionToken = createUserSession({
-            id: googleUser.sub,
+            id: verifieduserId,
             name: googleUser.name,
-            email: googleUser.email,
+            email: verifiedEmail,
             image: googleUser.picture,
-            email_verified: googleUser.email_verified
+            email_verified: googleUser.email_verified,
+            exp: Date.now() + 60 * 60 * 1000
         });
 
         setAuthTokenCookie(event, sessionToken);
