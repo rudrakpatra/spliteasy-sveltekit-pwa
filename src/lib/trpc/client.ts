@@ -2,6 +2,7 @@ import type { Router } from './router';
 import { createTRPCClient, type TRPCClientInit } from 'trpc-sveltekit';
 import { svelteQueryWrapper } from 'trpc-svelte-query-adapter';
 import type { QueryClient } from '@tanstack/svelte-query';
+import superjson from 'superjson';
 
 export type TRPCClientType = ReturnType<typeof svelteQueryWrapper<Router>>;
 
@@ -19,6 +20,7 @@ export function trpc(
         client: createTRPCClient<Router>({
             init,
             url: '/api/trpc',
+            transformer: superjson,
         }),
         queryClient,
     });
