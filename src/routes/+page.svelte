@@ -7,3 +7,9 @@
 <a href="/dashboard" data-sveltekit-reload>
 	<Button variant="link">Dashboard</Button>
 </a>
+
+<footer>
+	<div class="container mx-auto px-4">
+		<p>&copy; {new Date().getFullYear()} SplitEasy. All rights reserved.</p>
+	</div>
+</footer>

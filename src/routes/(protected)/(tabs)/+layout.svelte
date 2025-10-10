@@ -1,30 +1,60 @@
 <script lang="ts">
-	let { children, data } = $props();
+	import { Button } from '$lib/components/ui/button';
+	import Receipt from '@tabler/icons-svelte/icons/receipt';
+	import Settings from '@tabler/icons-svelte/icons/settings';
+	import Users from '@tabler/icons-svelte/icons/users';
+
+	let { children } = $props();
 </script>
 
 <div class="bg-background min-h-screen">
-	<nav class="bg-card border-b">
+	<header class="bg-card border-b">
 		<div class="container mx-auto px-4">
 			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center space-x-4">
 					<a href="/" class="text-xl font-bold">SplitEasy</a>
-					<nav class="hidden space-x-6 md:flex">
-						<a href="/dashboard" class="hover:text-primary text-sm font-medium">Dashboard</a>
-						<a href="/groups" class="hover:text-primary text-sm font-medium">Groups</a>
-						<a href="/profile" class="hover:text-primary text-sm font-medium">Profile</a>
+					<nav class="hidden md:flex">
+						<a href="/dashboard">
+							<Button variant="link" size="sm">Dashboard</Button>
+						</a>
+						<a href="/groups">
+							<Button variant="link" size="sm">Groups</Button>
+						</a>
+						<a href="/profile">
+							<Button variant="link" size="sm">Profile</Button>
+						</a>
 					</nav>
 				</div>
-				<div class="flex items-center space-x-4">
-					<span class="text-muted-foreground text-sm">Welcome, {data.user.name}</span>
-					<a href="/auth/signout" class="text-muted-foreground hover:text-primary text-sm"
-						>Sign out</a
-					>
-				</div>
+				<a href="/auth/signout">
+					<Button variant="link" size="sm">Sign out</Button>
+				</a>
 			</div>
 		</div>
-	</nav>
+	</header>
 
 	<main class="flex-1">
 		{@render children()}
 	</main>
+
+	<footer class="bg-card fixed bottom-0 left-0 right-0 border-t">
+		<nav class="bottom-nav-bar grid h-16 grid-cols-3 md:hidden">
+			<a href="/dashboard">
+				<Receipt />
+			</a>
+			<a href="/groups">
+				<Users />
+			</a>
+			<a href="/profile">
+				<Settings />
+			</a>
+		</nav>
+	</footer>
 </div>
+
+<style>
+	.bottom-nav-bar {
+		& > * {
+			@apply grid place-content-center;
+		}
+	}
+</style>

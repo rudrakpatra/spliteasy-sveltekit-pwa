@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Avatar from '$lib/components/ui/avatar';
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/trpc/client';
 	import * as Empty from '$lib/components/ui/empty/index.js';
@@ -38,7 +39,10 @@
 			{:else if $groupsQuery.data?.length > 0}
 				{#each $groupsQuery.data as group (group.id)}
 					<div class="flex items-center space-x-4">
-						<img src={group.img} alt={group.name} class="h-20 w-20 rounded-full" />
+						<Avatar.Root class="block size-20 text-4xl">
+							<Avatar.Image src={group.img} alt={group.name} />
+							<Avatar.Fallback>{group.name.charAt(0)}</Avatar.Fallback>
+						</Avatar.Root>
 						<div>
 							<h2 class="text-xl font-semibold">{group.name}</h2>
 							<p class="text-muted-foreground">{group.id}</p>
