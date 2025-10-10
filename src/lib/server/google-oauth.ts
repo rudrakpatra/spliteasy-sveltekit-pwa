@@ -4,12 +4,12 @@ import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } from '$en
 export const google = new Google(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 
 export type GoogleUser = {
-	sub: `${number}`;
+	sub: string;
 	name: string;
 	given_name: string;
 	family_name: string;
 	picture: string;
-	email: `${string}@${string}.${string}`;
+	email: string;
 	email_verified: boolean;
 }
 

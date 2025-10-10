@@ -1,8 +1,10 @@
-import { router as groupsRouter } from './routers/groups';
 import { t } from './init';
+import { router as groupsRouter } from './routers/group';
+import { router as userRouter } from './routers/user';
 
 export const router = t.router({
-    groups: groupsRouter,
+    group: groupsRouter,
+    user: userRouter,
 });
 
 export type Router = typeof router;

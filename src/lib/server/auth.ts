@@ -4,10 +4,12 @@ import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import type { UserId } from '$lib/schemas/user';
+import type { Email } from '$lib/schemas/email';
 
 export interface JWTPayload {
-	userId: string;
-	email: string;
+	userId: UserId;
+	email: Email;
 	name: string;
 	image?: string;
 	iat?: number;
@@ -15,11 +17,12 @@ export interface JWTPayload {
 }
 
 export interface AuthUser {
-	id: string;
+	id: UserId;
 	name: string;
-	email: string;
+	email: Email;
 	image?: string;
 	email_verified: boolean;
+	exp: number;
 }
 
 // Token expiration time (30 days)
@@ -87,6 +90,7 @@ export async function validateUserSession(token: string): Promise<{ user: AuthUs
 			email: dbUser.email,
 			email_verified: dbUser.email_verified,
 			image: dbUser.img || undefined,
+			exp: payload.exp || 0,
 		};
 
 		return { user, valid: true };

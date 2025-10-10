@@ -1,5 +1,5 @@
 import { CURRENCY_MAP, COUNTRY_MAP, type CountryCode, type Currency, CURRENCY_ENUM } from './currency-codes';
-
+import { withTimeout } from '$lib/utils';
 /**
  * IP-based detection 
  * pros (simple)
@@ -11,6 +11,7 @@ async function getLocationFromIP(): Promise<Currency | null> {
         const response = await fetch('https://ipapi.co/json/');
         if (response.ok) {
             const { country_code, currency } = await response.json();
+            console.warn("Response ipapi.co/json/", { country_code, currency })
             return COUNTRY_MAP.get(country_code) || CURRENCY_MAP.get(currency) || null;
         }
     } catch (error) {
@@ -42,6 +43,7 @@ async function getCurrencyFromGeolocation(): Promise<Currency | null> {
 
             if (response.ok) {
                 const data = await response.json();
+                console.warn("Response bigdatacloud.net/data/reverse-geocode-client", data)
                 return COUNTRY_MAP.get(data.countryCode) || null;
             }
         }
@@ -82,7 +84,7 @@ export async function getCurrencySuggestions(): Promise<Currency[]> {
 
     // Strategy 1: Try geolocation first (most accurate)
     try {
-        const geoCurrency = await getCurrencyFromGeolocation();
+        const geoCurrency = await withTimeout(getCurrencyFromGeolocation(), 2000);
         if (geoCurrency) {
             suggestions.set(geoCurrency.code, geoCurrency);
         }
@@ -92,7 +94,7 @@ export async function getCurrencySuggestions(): Promise<Currency[]> {
 
     // Strategy 2: Try IP-based detection
     try {
-        const ipCurrency = await getLocationFromIP();
+        const ipCurrency = await withTimeout(getLocationFromIP(), 2000);
         if (ipCurrency && !suggestions.has(ipCurrency.code)) {
             suggestions.set(ipCurrency.code, ipCurrency);
         }

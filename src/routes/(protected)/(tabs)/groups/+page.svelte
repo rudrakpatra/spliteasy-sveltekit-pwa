@@ -10,7 +10,7 @@
 
 	let { data }: { data: PageData } = $props();
 	const api = trpc(page, data.queryClient);
-	const groupsQuery = api.groups.list.createQuery(undefined, {
+	const groupsQuery = api.group.list.createQuery(undefined, {
 		// initialData: data.groups, //enable this get prefetched data
 		refetchInterval: Infinity
 	});
@@ -37,18 +37,22 @@
 					</Button>
 				</div>
 			{:else if $groupsQuery.data?.length > 0}
-				{#each $groupsQuery.data as group (group.id)}
-					<div class="flex items-center space-x-4">
-						<Avatar.Root class="block size-20 text-4xl">
-							<Avatar.Image src={group.img} alt={group.name} />
-							<Avatar.Fallback>{group.name.charAt(0)}</Avatar.Fallback>
-						</Avatar.Root>
-						<div>
-							<h2 class="text-xl font-semibold">{group.name}</h2>
-							<p class="text-muted-foreground">{group.id}</p>
-						</div>
-					</div>
-				{/each}
+				<div class="space-y-6">
+					{#each $groupsQuery.data as group (group.id)}
+						<a class="block" href={`/groups/${group.id}`}>
+							<div class="flex items-center space-x-4">
+								<Avatar.Root class="block size-20 text-4xl">
+									<Avatar.Image src={group.img} alt={group.name} />
+									<Avatar.Fallback>{group.name.charAt(0)}</Avatar.Fallback>
+								</Avatar.Root>
+								<div>
+									<h2 class="text-lg font-semibold">{group.name}</h2>
+									<p class="text-muted-foreground">{group.id}</p>
+								</div>
+							</div>
+						</a>
+					{/each}
+				</div>
 			{:else}
 				<Empty.Root>
 					<Empty.Header>

@@ -71,10 +71,14 @@
 			<div class="border-t pt-4">
 				<h3 class="mb-2 text-lg font-medium">Currency Suggestions</h3>
 				<div class="text-muted-foreground space-y-1 text-sm">
-					{#if $currencySuggestions.data}
+					{#if $currencySuggestions.isLoading}
+						<p>Loading...</p>
+					{:else if $currencySuggestions.data}
 						{#each $currencySuggestions.data as currency}
 							<p>• {currency.currency}</p>
 						{/each}
+					{:else}
+						<p>No currency suggestions available.</p>
 					{/if}
 				</div>
 			</div>

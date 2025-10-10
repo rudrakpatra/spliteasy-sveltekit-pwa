@@ -2,14 +2,16 @@
 	import { Button } from '$lib/components/ui/button';
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
-<a href="/dashboard" data-sveltekit-reload>
-	<Button variant="link">Dashboard</Button>
-</a>
-
-<footer>
-	<div class="container mx-auto px-4">
+<div class="flex min-h-screen flex-col">
+	<header></header>
+	<main class="grid flex-1 place-content-center space-y-4 text-center">
+		<h1 class="text-6xl font-bold">SplitEasy</h1>
+		<p>Manage your expenses with ease.</p>
+		<a href="/dashboard" data-sveltekit-reload>
+			<Button variant="default">Get Started</Button>
+		</a>
+	</main>
+	<footer class="p-2 text-center">
 		<p>&copy; {new Date().getFullYear()} SplitEasy. All rights reserved.</p>
-	</div>
-</footer>
+	</footer>
+</div>
