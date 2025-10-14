@@ -17,7 +17,7 @@
 	// Derived stategroup
 	let group = api.group.getById.createQuery({ id: data.id });
 	let members = api.group.getMembers.createQuery({ groupId: data.id });
-	// let expenses = $derived(api.expenses.listByGroup.query({ groupId: data.groupId }));
+	let balances = api.group.getBalances.createQuery({ groupId: data.id });
 </script>
 
 <svelte:head>
@@ -48,6 +48,7 @@
 				</div>
 			</Card.Header>
 		</Card.Root>
+		{JSON.stringify($balances.data?.items)}
 
 		<!-- Members Section -->
 		<Card.Root class="mb-6">
@@ -74,45 +75,5 @@
 				{/if}
 			</Card.Content>
 		</Card.Root>
-
-		<!-- Expenses Section -->
-		<!-- <Card.Root>
-			<Card.Header>
-				<div class="flex items-center justify-between">
-					<Card.Title>Expenses</Card.Title>
-					<Button onclick={() => goto(`/group/${data.id}/add-expense`)}>Add Expense</Button>
-				</div>
-			</Card.Header>
-
-			<Card.Content>
-				{#if $expensesQuery.isLoading}
-					<p class="text-muted-foreground">Loading expenses...</p>
-				{:else if expenses.length === 0}
-					<p class="text-muted-foreground">No expenses yet. Start tracking!</p>
-				{:else}
-					<div class="space-y-3">
-						{#each expenses as expense}
-							<div
-								class="hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg p-3"
-								onclick={() => goto(`/expense/${expense.id}`)}
-							>
-								<div class="flex-1">
-									<p class="font-medium">{expense.description}</p>
-									<p class="text-muted-foreground text-sm">
-										Paid by {expense.paidBy.name}
-									</p>
-								</div>
-								<div class="text-right">
-									<p class="font-semibold">₹{expense.amount.toFixed(2)}</p>
-									<p class="text-muted-foreground text-sm">
-										{new Date(expense.createdAt).toLocaleDateString()}
-									</p>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</Card.Content>
-		</Card.Root> -->
 	</div>
 {/if}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { createGroupSchema } from '$lib/schemas/group';
+	import { createGroupSchema, transformedCreateGroupSchema } from '$lib/shared/schema/group';
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -10,6 +10,7 @@
 	import * as Form from '$lib/components/ui/form';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import { toast } from 'svelte-sonner';
 
 	let { data }: { data: PageData } = $props();
 
@@ -18,13 +19,13 @@
 	const utils = api.createUtils();
 
 	// Setup mutation
-	const createGroup = api.group.create.createMutation({
+	const createGroup = api.group.insert.createMutation({
 		onSuccess: (group) => {
 			utils.group.list.invalidate();
 			goto(`/groups/${group.id}`);
 		},
 		onError: (error) => {
-			console.error('Failed to create group:', error);
+			toast.error('Failed to create group', { description: error.message });
 		}
 	});
 
@@ -37,7 +38,7 @@
 			// This runs when form is submitted and valid
 			if (form.valid) {
 				// Submit via tRPC mutation
-				$createGroup.mutate(form.data);
+				$createGroup.mutate(transformedCreateGroupSchema.parse(form.data));
 			}
 		}
 	});
@@ -92,15 +93,6 @@
 					<Form.Description>Leave empty for auto-generated avatar</Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
-
-				<!-- tRPC Mutation Error -->
-				{#if $createGroup.isError}
-					<div class="bg-destructive/10 rounded-lg p-4">
-						<p class="text-destructive text-sm">
-							Error: {$createGroup.error.message}
-						</p>
-					</div>
-				{/if}
 			</Card.Content>
 
 			<Card.Footer class="flex justify-between">

@@ -1,5 +1,6 @@
-import { CURRENCY_MAP, COUNTRY_MAP, type CountryCode, type Currency, CURRENCY_ENUM } from './currency-codes';
+import { CURRENCY_MAP, COUNTRY_MAP, type CountryCode, type Currency, CURRENCY_ENUM, currencies } from './currency-codes';
 import { withTimeout } from '$lib/utils';
+import z from 'zod';
 /**
  * IP-based detection 
  * pros (simple)
@@ -98,3 +99,5 @@ export async function getCurrencySuggestions(): Promise<Currency[]> {
 
     return Array.from(suggestions.values());
 }
+
+export const currencyCodeSchema = z.enum(Object.values(currencies).map((currency) => currency.code));

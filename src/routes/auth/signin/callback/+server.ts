@@ -5,8 +5,8 @@ import { users } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { createUserSession, setAuthTokenCookie } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
-import { emailSchema } from '$lib/schemas/email';
-import { userIdSchema } from '$lib/schemas/user';
+import { emailSchema } from '$lib/shared/schema/email';
+import { userIdSchema } from '$lib/shared/schema/user';
 
 export async function GET(event: RequestEvent): Promise<Response> {
     const code = event.url.searchParams.get('code');

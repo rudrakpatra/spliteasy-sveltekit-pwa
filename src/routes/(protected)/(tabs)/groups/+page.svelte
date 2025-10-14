@@ -11,10 +11,16 @@
 
 	let { data }: { data: PageData } = $props();
 	const api = trpc(page, data.queryClient);
-	const groupsQuery = api.group.list.createQuery(undefined, {
-		// initialData: data.groups, //enable this get prefetched data
-		refetchInterval: Infinity
-	});
+	const groupsQuery = api.group.list.createQuery(
+		{
+			limit: 20,
+			offset: 0
+		},
+		{
+			// initialData: data.groups, //enable this get prefetched data
+			refetchInterval: Infinity
+		}
+	);
 </script>
 
 <svelte:head>
@@ -22,7 +28,7 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-2xl px-4 py-8">
-	<div class="bg-card rounded-lg border p-6 shadow-sm">
+	<div class="rounded-lg border bg-card p-6 shadow-sm">
 		<div class="flex justify-between">
 			<h1 class="mb-6 text-2xl font-bold">Groups</h1>
 			<Button href="/group/add" variant="ghost">Add <Plus class="h-4 w-4" /></Button>
@@ -33,15 +39,15 @@
 					<p class="text-muted-foreground">Loading groups...</p>
 				</div>
 			{:else if $groupsQuery.isError}
-				<div class="rounded-lg bg-red-50 p-4">
-					<p class="text-red-500">Error: {$groupsQuery.error.message}</p>
+				<div class="rounded-lg p-4">
+					<p class="text-destructive">Error: {$groupsQuery.error.message}</p>
 					<Button onclick={() => $groupsQuery.refetch()} class="mt-2" variant="outline" size="sm">
 						Retry
 					</Button>
 				</div>
-			{:else if $groupsQuery.data?.length > 0}
+			{:else if $groupsQuery.data?.items?.length > 0}
 				<div class="space-y-6">
-					{#each $groupsQuery.data as group (group.id)}
+					{#each $groupsQuery.data.items as group (group.id)}
 						<a class="block" href={`/groups/${group.id}`}>
 							<div class="flex items-center space-x-4">
 								<Avatar.Root class="block size-20 text-4xl">

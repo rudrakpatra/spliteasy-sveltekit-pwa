@@ -9,7 +9,7 @@
 	let user = api.user.getById.createQuery({ id: userId });
 </script>
 
-<div class="hover:bg-muted flex items-center gap-3 rounded-lg p-2">
+<div class="flex items-center gap-3 rounded-lg p-2 hover:bg-muted">
 	<Avatar.Root>
 		<Avatar.Image src={$user.data?.img} alt={$user.data?.name} />
 		<Avatar.Fallback>
@@ -18,6 +18,6 @@
 	</Avatar.Root>
 	<div class="flex-1">
 		<p class="font-medium">{$user.data?.name}</p>
-		<p class="text-muted-foreground text-sm">{$user.data?.id}</p>
+		<p class="text-sm text-muted-foreground">{$user.data?.email}</p>
 	</div>
 </div>

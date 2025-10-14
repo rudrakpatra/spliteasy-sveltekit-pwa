@@ -131,4 +131,9 @@
     @apply bg-background text-foreground;
     letter-spacing: 0em;
   }
+
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
 }

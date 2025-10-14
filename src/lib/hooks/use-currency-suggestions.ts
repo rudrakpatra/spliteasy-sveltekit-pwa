@@ -1,6 +1,6 @@
 
 import { createQuery, queryOptions } from '@tanstack/svelte-query';
-import { getCurrencySuggestions } from '$lib/currency/currency';
+import { getCurrencySuggestions } from '$lib/shared/currency/currency';
 
 
 export const currencySuggestionsQuery = queryOptions({

@@ -19,10 +19,10 @@
 	let error = page.url.searchParams.get('error');
 </script>
 
-<div class="bg-background flex min-h-screen flex-col">
+<div class="flex min-h-[100dvh] flex-col bg-background">
 	<!-- Main Content -->
 	<main class="container mx-auto grid flex-1 place-content-center space-y-4 p-4 text-center">
-		<div class="min-w-xs mx-auto max-w-xl space-y-8">
+		<div class="mx-auto max-w-xl min-w-xs space-y-8">
 			<!-- Sign In Card -->
 			<Card>
 				<CardHeader class="text-center">
@@ -31,38 +31,36 @@
 				</CardHeader>
 				<CardContent class="space-y-4">
 					{#if error === 'auth_failed'}
-						<div class="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
+						<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 							Authentication failed. Please try again.
 						</div>
 					{:else if error === 'invalid_state'}
-						<div class="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
+						<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 							Invalid request. Please try again.
 						</div>
 					{/if}
 
 					{#if user}
-						<div>
-							<a href={redirectUrl}>
-								<Button class="w-full" variant="outline">
-									<Avatar.Avatar class="h-6 w-6">
-										<Avatar.AvatarImage src={user.image || ''} />
-										<Avatar.AvatarFallback class="bg-primary text-xs">
-											{#if user.name}
-												{user.name
-													.split(' ')
-													.map((n) => n[0])
-													.join('')}
-											{:else if user.email}
-												{user.email[0].toUpperCase()}
-											{:else}
-												U
-											{/if}
-										</Avatar.AvatarFallback>
-									</Avatar.Avatar>
-									Continue as {user.name || user.email}
-								</Button>
-							</a>
-						</div>
+						<a class="block" href={redirectUrl}>
+							<Button class="w-full" variant="outline">
+								<Avatar.Avatar class="size-6 overflow-hidden">
+									<Avatar.AvatarImage src={user.image || ''} />
+									<Avatar.AvatarFallback class="bg-primary text-xs text-primary-foreground">
+										{#if user.name}
+											{user.name
+												.split(' ')
+												.map((n) => n[0])
+												.join('')}
+										{:else if user.email}
+											{user.email[0].toUpperCase()}
+										{:else}
+											U
+										{/if}
+									</Avatar.AvatarFallback>
+								</Avatar.Avatar>
+								Continue as {user.name || user.email}
+							</Button>
+						</a>
 					{/if}
 
 					<a href="/auth/signin/callback?redirect_to={encodeURIComponent(redirectUrl)}">

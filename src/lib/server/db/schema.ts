@@ -10,11 +10,15 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
-import type { CurrencyCode } from '$lib/currency/currency-codes';
-import type { UserId } from '$lib/schemas/user';
-import type { Uuid } from '$lib/schemas/uuid';
-import type { Email } from '$lib/schemas/email';
-import type { DecimalString } from '$lib/schemas/math';
+import type { CurrencyCode } from '$lib/shared/currency/currency-codes';
+import { userIdSchema, type UserId } from '$lib/shared/schema/user';
+import { uuidSchema, type Uuid } from '$lib/shared/schema/uuid';
+import { emailSchema, type Email } from '$lib/shared/schema/email';
+import { numberStringSchema, type NumberString } from '$lib/shared/schema/math';
+import type { Category } from '$lib/shared/category/category';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { currencyCodeSchema } from '$lib/shared/currency/currency';
+import z from 'zod';
 
 // UsersTable
 export const users = pgTable('users', {
@@ -77,7 +81,7 @@ export const expenses = pgTable(
       .references(() => users.id),
     isPayment: boolean('is_payment').notNull().default(false),
     metadata: jsonb('metadata').$type<{
-      category: string | null;
+      category: Category["code"] | null;
       notes: string | null;
       receiptImageUrl: string | null;
     }>(),
@@ -102,11 +106,10 @@ export const expenseSplits = pgTable(
       .notNull()
       .references(() => groups.id),
     currency: varchar('currency', { length: 8 }).notNull().$type<CurrencyCode>(),
-    owesAmount: decimal('owes_amount').notNull().$type<DecimalString>(),
-    paidAmount: decimal('paid_amount').notNull().$type<DecimalString>(),
+    owesAmount: decimal('owes_amount').notNull().$type<NumberString>(),
+    paidAmount: decimal('paid_amount').notNull().$type<NumberString>(),
     isApproved: boolean('is_approved').notNull().default(false),
     approvalTime: timestamp('approval_time', { withTimezone: true })
-      .notNull()
       .$onUpdate(() => new Date()),
   },
   (table) => [
@@ -116,3 +119,62 @@ export const expenseSplits = pgTable(
     index('expense_splits_is_approved_idx').on(table.isApproved),
   ],
 );
+
+export const usersInsertSchema = createInsertSchema(users).extend({
+  id: userIdSchema,
+  email: emailSchema,
+})
+export const usersSelectSchema = createSelectSchema(users).extend({
+  id: userIdSchema,
+  email: emailSchema,
+})
+export const groupsInsertSchema = createInsertSchema(groups).extend({
+  id: uuidSchema,
+})
+export const groupsSelectSchema = createSelectSchema(groups).extend({
+  id: uuidSchema,
+})
+
+export const groupMembersInsertSchema = createInsertSchema(groupMembers).extend({
+  groupId: uuidSchema,
+  userId: userIdSchema,
+})
+export const groupMembersSelectSchema = createSelectSchema(groupMembers).extend({
+  groupId: uuidSchema,
+  userId: userIdSchema,
+})
+
+export const expensesInsertSchema = createInsertSchema(expenses).extend({
+  id: uuidSchema,
+})
+export const expensesSelectSchema = createSelectSchema(expenses).extend({
+  id: uuidSchema,
+})
+
+export const expenseSplitsInsertSchema = createInsertSchema(expenseSplits).extend({
+  expenseId: uuidSchema,
+  userId: userIdSchema,
+  groupId: uuidSchema,
+  currency: currencyCodeSchema,
+  owesAmount: numberStringSchema,
+  paidAmount: numberStringSchema,
+});
+export const expenseSplitsSelectSchema = createSelectSchema(expenseSplits).extend({
+  expenseId: uuidSchema,
+  userId: userIdSchema,
+  groupId: uuidSchema,
+  currency: currencyCodeSchema,
+  owesAmount: numberStringSchema,
+  paidAmount: numberStringSchema,
+});
+
+export type SelectUser = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type SelectGroup = typeof groups.$inferSelect;
+export type InsertGroup = typeof groups.$inferInsert;
+export type SelectGroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = typeof groupMembers.$inferInsert;
+export type SelectExpense = typeof expenses.$inferSelect;
+export type InsertExpense = typeof expenses.$inferInsert;
+export type SelectExpenseSplit = typeof expenseSplits.$inferSelect;
+export type InsertExpenseSplit = typeof expenseSplits.$inferInsert;

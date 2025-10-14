@@ -1,0 +1,4 @@
+Split Evenly
+Split By Shares
+
+Remainder

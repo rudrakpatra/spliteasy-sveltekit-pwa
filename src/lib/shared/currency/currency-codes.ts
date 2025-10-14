@@ -1649,15 +1649,15 @@ export const currencies = [
             "Sistema Unitario De Compensacion Regional De Pagos \"Sucre\""
         ]
     },
-    {
-        "code": "XTS",
-        "number": "963",
-        "digits": 0,
-        "currency": "Codes specifically reserved for testing purposes",
-        "countries": [
-            "Zz06_testing_code"
-        ]
-    },
+    // {
+    //     "code": "XTS",
+    //     "number": "963",
+    //     "digits": 0,
+    //     "currency": "Codes specifically reserved for testing purposes",
+    //     "countries": [
+    //         "Zz06_testing_code"
+    //     ]
+    // },
     {
         "code": "XUA",
         "number": "965",
@@ -1667,15 +1667,15 @@ export const currencies = [
             "Member Countries of the African Development Bank Group"
         ]
     },
-    {
-        "code": "XXX",
-        "number": "999",
-        "digits": 0,
-        "currency": "The codes assigned for transactions where no currency is involved",
-        "countries": [
-            "Zz07_no_currency"
-        ]
-    },
+    // {
+    //     "code": "XXX",
+    //     "number": "999",
+    //     "digits": 0,
+    //     "currency": "The codes assigned for transactions where no currency is involved",
+    //     "countries": [
+    //         "Zz07_no_currency"
+    //     ]
+    // },
     {
         "code": "YER",
         "number": "886",

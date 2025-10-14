@@ -11,10 +11,16 @@
 
 	let { data }: { data: PageData } = $props();
 	const api = trpc(page, data.queryClient);
-	const expensesQuery = api.expense.list.createQuery(undefined, {
-		// initialData: data.groups, //enable this get prefetched data
-		refetchInterval: Infinity
-	});
+	const pendingApprovalsQuery = api.user.getPendingApprovals.createQuery(
+		{
+			limit: 20,
+			offset: 0
+		},
+		{
+			// initialData: data.groups, //enable this get prefetched data
+			refetchInterval: Infinity
+		}
+	);
 </script>
 
 <svelte:head>
@@ -22,26 +28,31 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-2xl px-4 py-8">
-	<div class="bg-card rounded-lg border p-6 shadow-sm">
+	<div class="rounded-lg border bg-card p-6 shadow-sm">
 		<div class="flex justify-between">
 			<h1 class="mb-6 text-2xl font-bold">Dashboard</h1>
 			<Button href="/expense/add" variant="ghost">Add <Plus class="h-4 w-4" /></Button>
 		</div>
 		<div class="space-y-6">
-			{#if $expensesQuery.isPending}
+			{#if $pendingApprovalsQuery.isPending}
 				<div class="flex justify-center py-8">
 					<p class="text-muted-foreground">Loading expenses...</p>
 				</div>
-			{:else if $expensesQuery.isError}
-				<div class="rounded-lg bg-red-50 p-4">
-					<p class="text-red-500">Error: {$expensesQuery.error.message}</p>
-					<Button onclick={() => $expensesQuery.refetch()} class="mt-2" variant="outline" size="sm">
+			{:else if $pendingApprovalsQuery.isError}
+				<div class="rounded-lg p-4">
+					<p class="text-destructive">Error: {$pendingApprovalsQuery.error.message}</p>
+					<Button
+						onclick={() => $pendingApprovalsQuery.refetch()}
+						class="mt-2"
+						variant="outline"
+						size="sm"
+					>
 						Retry
 					</Button>
 				</div>
-			{:else if $expensesQuery.data?.length > 0}
+			{:else if $pendingApprovalsQuery.data?.items?.length > 0}
 				<div class="space-y-6">
-					{#each $expensesQuery.data as expense (expense.id)}
+					{#each $pendingApprovalsQuery.data.items as expense (expense.id)}
 						<Expense expenseId={expense.id} />
 					{/each}
 				</div>

@@ -7,8 +7,8 @@
 	let { children } = $props();
 </script>
 
-<div class="bg-background flex min-h-screen flex-col">
-	<header class="bg-card border-b">
+<div class="flex min-h-[100dvh] flex-col bg-background">
+	<header class="border-b bg-card">
 		<div class="container mx-auto px-4">
 			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center space-x-4">
@@ -36,7 +36,7 @@
 		{@render children()}
 	</main>
 
-	<footer class="bg-card sticky bottom-0 left-0 right-0 border-t">
+	<footer class="sticky right-0 bottom-0 left-0 border-t bg-card">
 		<nav class="bottom-nav-bar grid h-16 grid-cols-3 md:hidden">
 			<a href="/dashboard">
 				<Receipt />

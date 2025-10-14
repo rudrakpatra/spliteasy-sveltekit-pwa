@@ -4,8 +4,8 @@ import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import type { UserId } from '$lib/schemas/user';
-import type { Email } from '$lib/schemas/email';
+import type { UserId } from '$lib/shared/schema/user';
+import type { Email } from '$lib/shared/schema/email';
 
 export interface JWTPayload {
 	userId: UserId;
