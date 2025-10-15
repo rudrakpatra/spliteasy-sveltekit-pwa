@@ -12,7 +12,7 @@
 <Input id="calc-input" bind:value={expression} />
 
 <VisualViewportView forceOverlaysContent={true}>
-	<DataList.Root class="absolute inset-0 top-auto" inputId="calc-input">
+	<DataList.Root class="absolute inset-0 top-auto" for="calc-input">
 		<DataList.Option value="+"><Plus /></DataList.Option>
 		<DataList.Option value="-"><Minus /></DataList.Option>
 		<DataList.Option value="*"><X /></DataList.Option>

@@ -1,48 +1,45 @@
-<!-- DataListOption.svelte -->
+<!-- DataListOption.svelte (updated for TipTap) -->
 <script lang="ts">
 	import { VIBRATE_DURATION } from '$lib/constants';
 	import { getContext } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import type { Editor } from '@tiptap/core';
 
 	interface Props {
 		value?: string;
 		label?: string;
-		onSelect?: (ev: { target: HTMLElement; preventDefault: () => void }) => void;
+		onSelect?: (ev: { target: HTMLElement; preventDefault: () => void; editor: Editor }) => void;
 		children?: Snippet;
 	}
 
 	let { value, label, onSelect, children }: Props = $props();
 
-	const context = getContext<{ target: HTMLInputElement | null }>('datalist-context');
+	const context = getContext<{ editor?: Editor }>('datalist-context');
 
 	function handleClick(e: Event) {
 		e.preventDefault();
-		// to stop the actual activeElement to loose focus
-		if (!context.target) return;
-		const target = context.target;
-		// if not activeElement
-		// may happen as the list is transitioning
-		if (target !== document.activeElement) target.focus();
+		const ed = context.editor;
+		if (!ed) return;
+		ed.chain().focus().run(); // Ensure focus
 		let defaultPrevented = false;
 		const ev = {
-			target,
+			target: e.currentTarget as HTMLElement,
 			preventDefault: () => {
 				defaultPrevented = true;
-			}
+			},
+			editor: ed
 		};
 		onSelect && onSelect(ev);
 		if (defaultPrevented) return;
 		if (value) {
-			// command add text
-			navigator.vibrate(VIBRATE_DURATION);
-			document.execCommand('insertText', false, value);
+			navigator.vibrate?.(VIBRATE_DURATION);
+			ed.chain().focus().insertContent(value).run();
 		}
 	}
 
 	function handlePointerdown(e: Event) {
 		e.preventDefault();
 		e.stopPropagation();
-		// to stop the actual activeElement to loose focus
 	}
 </script>
 

@@ -1,63 +1,54 @@
-<!-- DataListRoot.svelte -->
 <script lang="ts">
 	import { cn } from '$lib/utils';
 	import { setContext } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { fly, slide } from 'svelte/transition';
+	import { slide } from 'svelte/transition';
+	import { useActiveElement } from '$lib/hooks/use-active-element.svelte';
 
 	interface Props extends HTMLAttributes<HTMLDivElement> {
-		inputId?: string;
+		for?: string;
 		children: Snippet;
 	}
 
-	let { inputId, class: className, children, ...restProps }: Props = $props();
+	let { for: inputId, class: className, children, ...restProps }: Props = $props();
 
 	const context = $state({
-		inputElement: null as HTMLInputElement | null
+		target: null as HTMLInputElement | null
 	});
 
 	let isInputFocused = $state(false);
 
 	setContext('datalist-context', context);
 
+	// Use the active element hook
+	const activeElement = useActiveElement();
+
 	$effect(() => {
 		if (typeof document !== 'undefined') {
 			if (inputId) {
 				const input = document.getElementById(inputId) as HTMLInputElement | null;
-				context.inputElement = input;
+				context.target = input;
 			}
 		}
 	});
 
 	$effect(() => {
-		if (typeof document === 'undefined') return;
+		const activeEl = activeElement.current;
 
-		const checkActiveElement = () => {
-			const activeEl = document.activeElement;
-
-			if (inputId) {
-				// Check if the specific input is focused
-				isInputFocused = activeEl?.id === inputId;
-			} else if (context.inputElement) {
-				// Check if the context input is focused
-				isInputFocused = activeEl === context.inputElement;
-			} else {
-				// Check if any input is focused
-				isInputFocused = activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA';
-			}
-		};
-
-		checkActiveElement();
-
-		// Listen for focus/blur events on the document
-		document.addEventListener('focusin', checkActiveElement);
-		document.addEventListener('focusout', checkActiveElement);
-
-		return () => {
-			document.removeEventListener('focusin', checkActiveElement);
-			document.removeEventListener('focusout', checkActiveElement);
-		};
+		if (inputId) {
+			// Check if the specific input is focused
+			isInputFocused = activeEl?.id === inputId;
+		} else if (context.target) {
+			// Check if the context input is focused
+			isInputFocused = activeEl === context.target;
+		} else {
+			// Check if any input or textarea or contenteditable is focused
+			isInputFocused =
+				activeEl?.tagName === 'INPUT' ||
+				activeEl?.tagName === 'TEXTAREA' ||
+				activeEl?.getAttribute('contenteditable') === 'true';
+		}
 	});
 
 	$effect(() => {

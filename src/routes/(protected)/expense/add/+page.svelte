@@ -24,7 +24,6 @@
 	import CashBanknote from '@tabler/icons-svelte/icons/cash-banknote';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { Label } from '$lib/components/ui/label';
 	import Receipt from '@tabler/icons-svelte/icons/receipt';
 	import Scan from '@tabler/icons-svelte/icons/scan';
 	import Upload from '@tabler/icons-svelte/icons/upload';
@@ -34,7 +33,6 @@
 	import Checks from '@tabler/icons-svelte/icons/checks';
 	import Plus from '@tabler/icons-svelte/icons/plus';
 	import { useCurrencySuggestions } from '$lib/hooks/use-currency-suggestions';
-	import ExpenseDsl from './expense-dsl.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -133,7 +131,7 @@
 							<Form.Label>Do you have a receipt?</Form.Label>
 							<!-- bind:value={$formData.receiptImageUrl} -->
 							<Avatar.Root
-								class="h-auto min-h-32 w-full overflow-hidden rounded-lg border border-border shadow-xs"
+								class="border-border shadow-xs h-auto min-h-32 w-full overflow-hidden rounded-lg border"
 							>
 								<Avatar.Image
 									class="aspect-auto w-full rounded-lg"
@@ -141,9 +139,9 @@
 									alt="Receipt"
 								/>
 								<Avatar.Fallback
-									class="flex aspect-auto min-h-32 items-center justify-center rounded-lg bg-transparent shadow-xs"
+									class="shadow-xs flex aspect-auto min-h-32 items-center justify-center rounded-lg bg-transparent"
 								>
-									<Receipt class="block stroke-muted-foreground" />
+									<Receipt class="stroke-muted-foreground block" />
 								</Avatar.Fallback>
 							</Avatar.Root>
 
@@ -295,14 +293,9 @@
 				<Form.Field {form} name="items">
 					<Form.Control>
 						{#snippet children({ props })}
-							<Form.Label>Items</Form.Label>
-							<!-- <ExpenseItemsInput /> -->
-							<ExpenseDsl />
-							<!-- <ExpenseItemsInput
-								{...props}
-								bind:value={$formData.items}
-								disabled={$createExpense.isPending}
-							/> -->
+							<Form.Label>How to split?</Form.Label>
+							<!-- <Textarea {...props} placeholder="Alice paid 100 for Burger..." /> -->
+							<ExpenseItemsInput />
 						{/snippet}
 					</Form.Control>
 					<Form.Description>Choose items for this expense</Form.Description>
