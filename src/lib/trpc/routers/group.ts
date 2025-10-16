@@ -151,7 +151,7 @@ export const groupRouter = t.router({
         .input(z.object({ groupId: z.string() }))
         .query(async ({ input, ctx }) => {
             const groupId = uuidSchema.decode(input.groupId);
-
+            console.log(groupId);
             const rows = await ctx.db
                 .select({
                     user: users,
@@ -166,6 +166,7 @@ export const groupRouter = t.router({
                 ...row.member,
                 user: row.user,
             }));
+            console.log(result);
 
             // Verify current user is a member
             if (!result.find((r) => r.userId === ctx.user.id)) {

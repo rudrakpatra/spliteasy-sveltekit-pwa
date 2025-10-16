@@ -22,7 +22,9 @@
 				return;
 			}
 			if ((navigator.virtualKeyboard as any).overlaysContent === false) {
-				toast.warning('Visual Viewport View may not work properly. Check console for more info.');
+				toast.warning(
+					'Visual Viewport View may not work properly. Please use forceOverlaysContent prop. Check console for more info.'
+				);
 				console.warn('Please set navigator.virtualKeyboard.overlaysContent=true');
 			}
 		} else {

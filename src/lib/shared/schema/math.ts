@@ -13,7 +13,7 @@ export const numberStringSchema = z
 /**
  * Item amount expression schema - must evaluate to a number
  */
-export const itemAmountExpressionSchema = z
+export const amountExpressionSchema = z
     .string()
     .refine((value) => {
         try {
@@ -22,7 +22,7 @@ export const itemAmountExpressionSchema = z
         } catch {
             return false;
         }
-    }, 'Invalid item amount expression');
+    }, 'Invalid amount expression');
 
 /**
  * Share expression schema - must evaluate to a number (with optional variable x)
@@ -38,7 +38,7 @@ export const shareExpressionSchema = z
         }
     }, 'Invalid share expression');
 
-export type ItemAmountExpressionSchema = z.infer<typeof itemAmountExpressionSchema>;
+export type ItemAmountExpressionSchema = z.infer<typeof amountExpressionSchema>;
 export type ShareExpressionSchema = z.infer<typeof shareExpressionSchema>;
 
 /**

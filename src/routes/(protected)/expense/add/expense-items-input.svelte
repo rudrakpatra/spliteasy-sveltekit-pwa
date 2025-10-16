@@ -45,7 +45,7 @@
 <VisualViewportView forceOverlaysContent>
 	<DataList.Root
 		for="expense-items-input"
-		class="border-border bg-background text-foreground absolute inset-0 top-auto flex h-12 items-start gap-3 overflow-auto border-t px-3 py-1"
+		class="absolute inset-0 top-auto flex h-12 items-start gap-3 overflow-auto border-t border-border bg-background px-3 py-1 text-foreground"
 	>
 		<DataList.Option value="+">
 			<Badge class="rounded-full p-2 px-3">
