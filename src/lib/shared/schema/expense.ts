@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { categorySchema } from '../category/category';
 import { currencyCodeSchema } from '../currency/currency';
-import { evaluate, evaluateShares, itemAmountExpressionSchema, numberStringSchema, shareExpressionSchema, type NumberString } from './math';
+import { evaluate, evaluateShares, amountExpressionSchema, numberStringSchema, shareExpressionSchema, type NumberString } from './math';
 import { type UserId, userIdSchema } from './user';
 import { CURRENCY_MAP, type CurrencyCode } from '../currency/currency-codes';
 import type { insertExpenseInputSchema } from '$lib/trpc/routers/expense';
@@ -10,7 +10,7 @@ export const expenseItemsSchema = z
     .array(
         z.object({
             name: z.string().min(1, 'Name is required'),
-            amountExpression: itemAmountExpressionSchema,
+            amountExpression: amountExpressionSchema,
             split: z.array(
                 z.object({
                     userId: userIdSchema,

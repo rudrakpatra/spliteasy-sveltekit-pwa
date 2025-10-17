@@ -17,8 +17,7 @@
 	import UsersGroup from '@tabler/icons-svelte/icons/users-group';
 	import { toast } from 'svelte-sonner';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import ExpenseItemsInput from './expense-items-input.svelte';
-	import { currencies } from '$lib/shared/currency/currency-codes';
+	import { currencies, type CurrencyCode } from '$lib/shared/currency/currency-codes';
 	import Category from '@tabler/icons-svelte/icons/category';
 	import { categories } from '$lib/shared/category/category';
 	import CashBanknote from '@tabler/icons-svelte/icons/cash-banknote';
@@ -28,11 +27,24 @@
 	import Scan from '@tabler/icons-svelte/icons/scan';
 	import Upload from '@tabler/icons-svelte/icons/upload';
 	import Ai from '@tabler/icons-svelte/icons/ai';
+	import ChevronRight from '@tabler/icons-svelte/icons/chevron-right';
 	import Sparkles from '@tabler/icons-svelte/icons/sparkles';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Checks from '@tabler/icons-svelte/icons/checks';
 	import Plus from '@tabler/icons-svelte/icons/plus';
 	import { useCurrencySuggestions } from '$lib/hooks/use-currency-suggestions';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import Check from '@tabler/icons-svelte/icons/check';
+	import { currencyLabel } from '$lib/shared/currency/currency';
+	import { uuidSchema } from '$lib/shared/schema/uuid';
+	import { autofocus } from '$lib/attachments/autofocus';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Label } from '$lib/components/ui/label';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import z from 'zod';
+	import Cube from '@tabler/icons-svelte/icons/cube';
+	import Items from './items.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -40,16 +52,7 @@
 	const api = trpc(page, data.queryClient);
 	const utils = api.createUtils();
 
-	// Setup mutation
-	const createExpense = api.expense.insert.createMutation({
-		onSuccess: (expense) => {
-			utils.expense.getProposed.invalidate();
-			goto(`/expense/${expense.id}`);
-		},
-		onError: (error) => {
-			toast.error('Failed to create expense', { description: error.message });
-		}
-	});
+	const currencySuggestions = useCurrencySuggestions();
 
 	// Setup Superforms with SPA mode (client-side only)
 	const form = superForm(defaults(zod4(createExpenseSchema)), {
@@ -67,10 +70,40 @@
 
 	const { form: formData, enhance } = form;
 
-	let drawers = $state({
-		groups: false,
-		currency: false,
-		category: false
+	// Set initial currency AFTER form is created
+	let currencyInitialized = $state(false);
+
+	$effect(() => {
+		if ($currencySuggestions.isSuccess && !currencyInitialized && !$formData.currency) {
+			formData.update((current) => ({
+				...current,
+				currency: $currencySuggestions.data[0].code
+			}));
+			currencyInitialized = true;
+		}
+	});
+
+	// Setup mutation
+	const createExpense = api.expense.insert.createMutation({
+		onSuccess: (expense) => {
+			utils.expense.getProposed.invalidate();
+			goto(`/expense/${expense.id}`);
+		},
+		onError: (error) => {
+			toast.error('Failed to create expense', { description: error.message });
+		}
+	});
+
+	let drawers = $state<Record<string, { open: boolean }>>({
+		groups: {
+			open: false
+		},
+		currency: {
+			open: false
+		},
+		category: {
+			open: false
+		}
 	});
 
 	const groupsQuery = api.group.list.createQuery(
@@ -81,6 +114,18 @@
 		{
 			refetchInterval: Infinity
 		}
+	);
+
+	const membersQuery = $derived(
+		api.group.getMembers.createQuery(
+			{
+				groupId: $formData.groupId
+			},
+			{
+				refetchInterval: Infinity,
+				enabled: uuidSchema.safeParse($formData.groupId).success
+			}
+		)
 	);
 
 	createExpense.subscribe((result) => {
@@ -104,7 +149,7 @@
 		}
 	};
 
-	const currencySuggestions = useCurrencySuggestions();
+	let items = $state<z.infer<typeof createExpenseSchema>['items']>([]);
 </script>
 
 <svelte:head>
@@ -131,7 +176,7 @@
 							<Form.Label>Do you have a receipt?</Form.Label>
 							<!-- bind:value={$formData.receiptImageUrl} -->
 							<Avatar.Root
-								class="border-border shadow-xs h-auto min-h-32 w-full overflow-hidden rounded-lg border"
+								class="h-auto min-h-32 w-full overflow-hidden rounded-lg border border-border shadow-xs"
 							>
 								<Avatar.Image
 									class="aspect-auto w-full rounded-lg"
@@ -139,9 +184,9 @@
 									alt="Receipt"
 								/>
 								<Avatar.Fallback
-									class="shadow-xs flex aspect-auto min-h-32 items-center justify-center rounded-lg bg-transparent"
+									class="flex aspect-auto min-h-32 items-center justify-center rounded-lg bg-transparent shadow-xs"
 								>
-									<Receipt class="stroke-muted-foreground block" />
+									<Receipt class="block stroke-muted-foreground" />
 								</Avatar.Fallback>
 							</Avatar.Root>
 
@@ -176,42 +221,6 @@
 					<Form.Description>Upload a receipt image for this expense</Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
-				<!-- Group Id Field -->
-				<Form.Field {form} name="groupId">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>Group</Form.Label>
-							<Button
-								{...props}
-								variant="outline"
-								type="button"
-								onclick={() => (drawers.groups = true)}
-							>
-								{$groupsQuery.data?.items.find((f) => f.id === $formData.groupId)?.name ||
-									'Select Group'}
-								<ChevronDown />
-							</Button>
-							<!-- <Select.Root type="single" name="groupId" bind:value={$formData.groupId}>
-								<Select.Trigger {...props}>
-									{$groupsQuery.data?.items.find((f) => f.id === $formData.groupId)?.name ??
-										'Select a group'}
-								</Select.Trigger>
-								<Select.Content>
-									<Select.Group>
-										<Select.Label>Groups</Select.Label>
-										{#each $groupsQuery.data?.items as group (group.id)}
-											<Select.Item value={group.id} label={group.name}>
-												{group.name}
-											</Select.Item>
-										{/each}
-									</Select.Group>
-								</Select.Content>
-							</Select.Root> -->
-						{/snippet}
-					</Form.Control>
-					<Form.Description>Choose a group to add this expense to</Form.Description>
-					<Form.FieldErrors />
-				</Form.Field>
 
 				<!-- Expense Name Field -->
 				<Form.Field {form} name="name">
@@ -235,20 +244,100 @@
 				<Form.Field {form} name="currency">
 					<Form.Control>
 						{#snippet children({ props })}
+							{@const currency = currencies.find((c) => c.code === $formData.currency)}
+							{@const success = $currencySuggestions.isSuccess}
+							{@const label = currency
+								? currencyLabel(currency)
+								: success
+									? 'Select a currency'
+									: 'Detecting...'}
 							<Form.Label>Currency</Form.Label>
+							{#if success}
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger>
+										{#snippet child({ props })}
+											<Button
+												{...props}
+												variant="outline"
+												type="button"
+												class="w-full justify-between"
+											>
+												{label}
+												<ChevronDown />
+											</Button>
+										{/snippet}
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content
+										align="start"
+										class="w-[var(--bits-dropdown-menu-trigger-width)]"
+									>
+										{#each $currencySuggestions.data as currency (currency.code)}
+											<DropdownMenu.Item
+												onSelect={() => {
+													$formData.currency = currency.code as CurrencyCode;
+												}}
+												class="flex items-center justify-between"
+											>
+												<span>{currency.currency}</span>
+												{#if $formData.currency === currency.code}
+													<Check />
+												{/if}
+											</DropdownMenu.Item>
+										{/each}
+
+										<DropdownMenu.Separator />
+
+										<DropdownMenu.Item
+											onSelect={(e) => {
+												drawers.currency.open = true;
+											}}
+											class="flex items-center justify-between"
+										>
+											<span>Show all currencies</span>
+											<ChevronRight />
+										</DropdownMenu.Item>
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+							{:else}
+								<Button
+									{...props}
+									variant="outline"
+									type="button"
+									onclick={() => {
+										drawers.currency.open = true;
+									}}
+									class="w-full justify-between"
+								>
+									{label}
+									<ChevronDown />
+								</Button>
+							{/if}
+						{/snippet}
+					</Form.Control>
+					<Form.Description>Choose a currency for this expense</Form.Description>
+					<Form.FieldErrors />
+				</Form.Field>
+
+				<!-- Group Id Field -->
+				<Form.Field {form} name="groupId">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Group</Form.Label>
 							<Button
 								{...props}
 								variant="outline"
 								type="button"
-								onclick={() => (drawers.currency = true)}
+								onclick={() => {
+									drawers.groups.open = true;
+								}}
 							>
-								{currencies.find((c) => c.code === $formData.currency)?.currency ||
-									'Select Currency'}
+								{$groupsQuery.data?.items.find((f) => f.id === $formData.groupId)?.name ||
+									'Select Group'}
 								<ChevronDown />
 							</Button>
 						{/snippet}
 					</Form.Control>
-					<Form.Description>Choose a currency for this expense</Form.Description>
+					<Form.Description>Choose a group to add this expense to</Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
 
@@ -256,70 +345,133 @@
 				<Form.Field {form} name="items">
 					<Form.Control>
 						{#snippet children({ props })}
+							{@const { data, isLoading, isSuccess, error } = $membersQuery}
 							<Form.Label>Paid by</Form.Label>
-							<!-- <div class="rounded-lg border-1 border-input shadow-xs"> -->
-							{#each ['Rudrak', 'Rahul', 'Ravi'] as participant}
-								<InputGroup.Root class="first:rounded-t-md last:rounded-b-md focus-within:z-10">
-									<InputGroup.Addon>
-										<Avatar.Root class="h-6 w-6 flex-shrink-0">
-											<Avatar.Image src="" alt={participant} />
-											<Avatar.Fallback>
-												{participant.slice(0, 1).toUpperCase()}
-											</Avatar.Fallback>
-										</Avatar.Root>
-										<InputGroup.Text class="text-xs">{participant}</InputGroup.Text>
-									</InputGroup.Addon>
-									<InputGroup.Input
-										id={`share-${participant}`}
-										type="text"
-										placeholder="0"
-										class="text-right"
-										autocomplete="off"
-										inputmode="numeric"
-										onfocus={(e) => {
-											//e.currentTarget.select()
-										}}
-									/>
-								</InputGroup.Root>
-							{/each}
-							<!-- </div> -->
+							{#if isLoading}
+								<Skeleton class="h-9 w-full" />
+							{:else if isSuccess}
+								<div>
+									{#each data as { user }}
+										<label
+											for={`paid-amt-${user.id}`}
+											class="group flex cursor-pointer items-center gap-3 border-t px-3 py-1.5 first:border-t-0"
+										>
+											<Avatar.Root class="size-6 flex-shrink-0">
+												<Avatar.Image src={user.img} alt={user.name} />
+												<Avatar.Fallback>
+													{user.name.slice(0, 1).toUpperCase()}
+												</Avatar.Fallback>
+											</Avatar.Root>
+											<span class="flex-1 text-sm font-medium">{user.name}</span>
+											<Input
+												id={`paid-amt-${user.id}`}
+												type="text"
+												placeholder="0"
+												variant="underlined"
+												class="field-sizing-content max-w-fit min-w-[4ch] text-center text-sm"
+												autocomplete="off"
+												inputmode="numeric"
+												onfocus={(e) => e.currentTarget.select()}
+											/>
+										</label>
+									{/each}
+								</div>
+							{/if}
 						{/snippet}
 					</Form.Control>
 					<Form.Description>Choose who paid for this expense</Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<!-- Items Field -->
 				<Form.Field {form} name="items">
 					<Form.Control>
 						{#snippet children({ props })}
-							<Form.Label>How to split?</Form.Label>
-							<!-- <Textarea {...props} placeholder="Alice paid 100 for Burger..." /> -->
-							<ExpenseItemsInput />
-						{/snippet}
-					</Form.Control>
-					<Form.Description>Choose items for this expense</Form.Description>
-					<Form.FieldErrors />
-				</Form.Field>
+							{@const { data, isLoading, isSuccess, error } = $membersQuery}
+							<Form.Label>Split</Form.Label>
+							{#if isLoading}
+								<Skeleton class="h-9 w-full" />
+							{:else if isSuccess}
+								<Tabs.Root>
+									<Tabs.List>
+										<Tabs.Trigger value="equal">Equally</Tabs.Trigger>
+										<Tabs.Trigger value="shares">By Shares</Tabs.Trigger>
+										<Tabs.Trigger value="items">By Items</Tabs.Trigger>
+									</Tabs.List>
+									<Tabs.Content value="equal">
+										{#each data as { user }}
+											<label
+												for={`split-${user.id}`}
+												class="group flex cursor-pointer items-center gap-3 border-t px-3 py-1.5 first:border-t-0"
+											>
+												<Avatar.Root class="size-6 flex-shrink-0">
+													<Avatar.Image src={user.img} alt={user.name} />
+													<Avatar.Fallback>
+														{user.name.slice(0, 1).toUpperCase()}
+													</Avatar.Fallback>
+												</Avatar.Root>
+												<span class="flex-1 text-sm font-medium">{user.name}</span>
+												<div class="grid h-9 w-9 place-items-center">
+													<Checkbox id={`split-${user.id}`} />
+												</div>
+											</label>
+										{/each}
+									</Tabs.Content>
 
-				<!-- Metadata Fields -->
-				<Form.Field {form} name="category">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>Category</Form.Label>
-							<Button
-								{...props}
-								variant="outline"
-								type="button"
-								onclick={() => (drawers.category = true)}
-							>
-								{Object.values(categories).find((c) => c.code === $formData.category)?.name ||
-									'Select Category'}
-								<ChevronDown />
-							</Button>
+									<Tabs.Content value="shares">
+										{#each data as { user }}
+											<label
+												for={`share-${user.id}`}
+												class="group flex cursor-pointer items-center gap-3 border-t px-3 py-1.5 first:border-t-0"
+											>
+												<Avatar.Root class="size-6 flex-shrink-0">
+													<Avatar.Image src={user.img} alt={user.name} />
+													<Avatar.Fallback>
+														{user.name.slice(0, 1).toUpperCase()}
+													</Avatar.Fallback>
+												</Avatar.Root>
+												<span class="flex-1 text-sm font-medium">{user.name}</span>
+												<Input
+													id={`share-${user.id}`}
+													type="text"
+													placeholder="0"
+													variant="underlined"
+													class="field-sizing-content max-w-fit min-w-[4ch] text-center text-sm"
+													autocomplete="off"
+													inputmode="numeric"
+													onfocus={(e) => e.currentTarget.select()}
+												/>
+											</label>
+										{/each}
+									</Tabs.Content>
+
+									<Tabs.Content value="items">
+										<!-- {#each items as item}
+											<label
+												for={`item-${item.name}`}
+												class="group flex cursor-pointer items-center gap-3 border-t px-3 py-1.5 first:border-t-0"
+											>
+												<Cube class="size-6 flex-shrink-0" />
+												<span class="flex-1 text-sm font-medium">{item.name}</span>
+												<Input
+													id={`item-${item.name}`}
+													type="text"
+													placeholder="0"
+													variant="underlined"
+													class="field-sizing-content max-w-fit min-w-[4ch] text-center text-sm"
+													autocomplete="off"
+													inputmode="numeric"
+													onfocus={(e) => e.currentTarget.select()}
+												/>
+											</label>
+										{/each}
+										<Input variant="filled" placeholder="Add items..." /> -->
+										<Items />
+									</Tabs.Content>
+								</Tabs.Root>
+							{/if}
 						{/snippet}
 					</Form.Control>
-					<Form.Description>Choose category for this expense</Form.Description>
+					<Form.Description>Choose how to split this expense</Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
 
@@ -335,6 +487,29 @@
 						{/snippet}
 					</Form.Control>
 					<Form.Description>Notes for this expense</Form.Description>
+					<Form.FieldErrors />
+				</Form.Field>
+
+				<!-- Metadata Fields -->
+				<Form.Field {form} name="category">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>Category</Form.Label>
+							<Button
+								{...props}
+								variant="outline"
+								type="button"
+								onclick={() => {
+									drawers.category.open = true;
+								}}
+							>
+								{Object.values(categories).find((c) => c.code === $formData.category)?.name ||
+									'Select Category'}
+								<ChevronDown />
+							</Button>
+						{/snippet}
+					</Form.Control>
+					<Form.Description>Choose category for this expense</Form.Description>
 					<Form.FieldErrors />
 				</Form.Field>
 			</Card.Content>
@@ -370,10 +545,10 @@
 	</Card.Root>
 </div>
 
-<Drawer.Root bind:open={drawers.groups}>
+<Drawer.Root bind:open={drawers.groups.open}>
 	<Drawer.Content class="h-[calc(100vh-16rem)]">
 		<Command.Root class="bg-transparent">
-			<Command.Input placeholder="Search groups..." />
+			<Command.Input autofocus placeholder="Search groups..." />
 			<Command.List>
 				<Command.Empty>
 					<Empty.Root>
@@ -385,13 +560,13 @@
 						</Empty.Header>
 					</Empty.Root>
 				</Command.Empty>
-				<Command.Group>
+				<Command.Group title="Groups">
 					{#each $groupsQuery.data?.items as group}
 						<Command.Item
 							value={group.name}
 							onSelect={() => {
 								$formData.groupId = group.id;
-								drawers.groups = false;
+								drawers.groups.open = false;
 							}}
 						>
 							<b>{group.name}</b>
@@ -403,10 +578,10 @@
 	</Drawer.Content>
 </Drawer.Root>
 
-<Drawer.Root bind:open={drawers.currency}>
+<Drawer.Root bind:open={drawers.currency.open}>
 	<Drawer.Content class="h-[calc(100vh-16rem)]">
 		<Command.Root class="flex flex-col bg-transparent">
-			<Command.Input placeholder="Search by code, name or countries..." />
+			<Command.Input autofocus placeholder="Search by code, name or countries..." />
 			<Command.List class="max-h-full flex-1">
 				<Command.Empty>
 					<Empty.Root>
@@ -418,62 +593,13 @@
 						</Empty.Header>
 					</Empty.Root>
 				</Command.Empty>
-				{#if $currencySuggestions.isSuccess}
-					<Command.Group title="Currencies" heading="Suggestions">
-						{#each $currencySuggestions.data as currency (currency.code)}
-							<Command.Item
-								value={[currency.code, currency.currency, ...currency.countries].join(' ')}
-								onSelect={() => {
-									$formData.currency = currency.code;
-									drawers.currency = false;
-								}}
-								class="flex items-center justify-between gap-2"
-							>
-								<b>{currency.currency}</b>
-								<span>{currency.code}</span>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-					<Command.Group title="Currencies" heading="Rest">
-						{#each currencies.filter((currency) => !$currencySuggestions.data?.includes(currency)) as currency (currency.code)}
-							<Command.Item
-								value={[currency.code, currency.currency, ...currency.countries].join(' ')}
-								onSelect={() => {
-									$formData.currency = currency.code;
-									drawers.currency = false;
-								}}
-								class="flex items-center justify-between gap-2"
-							>
-								<b>{currency.currency}</b>
-								<span>{currency.code}</span>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				{:else}
-					<Command.Group title="Currencies">
-						{#each currencies as currency (currency.code)}
-							<Command.Item
-								value={[currency.code, currency.currency, ...currency.countries].join(' ')}
-								onSelect={() => {
-									$formData.currency = currency.code;
-									drawers.currency = false;
-								}}
-								class="flex items-center justify-between gap-2"
-							>
-								<b>{currency.currency}</b>
-								<span>{currency.code}</span>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				{/if}
-
-				<!-- <Command.Group title="Currencies" heading="By Code">
+				<Command.Group title="Currencies">
 					{#each currencies as currency (currency.code)}
 						<Command.Item
-							value={currency.code}
+							value={[currency.code, currency.currency, ...currency.countries].join(' ')}
 							onSelect={() => {
 								$formData.currency = currency.code;
-								drawers.currency = false;
+								drawers.currency.open = false;
 							}}
 							class="flex items-center justify-between gap-2"
 						>
@@ -482,45 +608,15 @@
 						</Command.Item>
 					{/each}
 				</Command.Group>
-				<Command.Group title="Currencies" heading="By Name">
-					{#each currencies as currency (currency.code)}
-						<Command.Item
-							value={currency.currency}
-							onSelect={() => {
-								$formData.currency = currency.code;
-								drawers.currency = false;
-							}}
-							class="flex items-center justify-between gap-2"
-						>
-							<b>{currency.currency}</b>
-							<span>{currency.code}</span>
-						</Command.Item>
-					{/each}
-				</Command.Group>
-				<Command.Group title="Currencies" heading="By Country">
-					{#each currencies as currency (currency.code)}
-						<Command.Item
-							value={currency.countries.join(' ')}
-							onSelect={() => {
-								$formData.currency = currency.code;
-								drawers.currency = false;
-							}}
-							class="flex items-center justify-between gap-2"
-						>
-							<b>{currency.currency}</b>
-							<span>{currency.code}</span>
-						</Command.Item>
-					{/each}
-				</Command.Group> -->
 			</Command.List>
 		</Command.Root>
 	</Drawer.Content>
 </Drawer.Root>
 
-<Drawer.Root bind:open={drawers.category}>
+<Drawer.Root bind:open={drawers.category.open}>
 	<Drawer.Content class="h-[calc(100vh-16rem)]">
 		<Command.Root class="flex flex-col bg-transparent">
-			<Command.Input placeholder="Search categories..." />
+			<Command.Input autofocus placeholder="Search categories..." />
 			<Command.List class="max-h-full flex-1">
 				<Command.Empty>
 					<Empty.Root>
@@ -532,13 +628,13 @@
 						</Empty.Header>
 					</Empty.Root>
 				</Command.Empty>
-				<Command.Group>
+				<Command.Group title="Categories">
 					{#each Object.values(categories) as category}
 						<Command.Item
 							value={category.code}
 							onSelect={() => {
 								$formData.category = category.code;
-								drawers.category = false;
+								drawers.category.open = false;
 							}}
 						>
 							{category.name}

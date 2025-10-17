@@ -101,3 +101,25 @@ export async function getCurrencySuggestions(): Promise<Currency[]> {
 }
 
 export const currencyCodeSchema = z.enum(Object.values(currencies).map((currency) => currency.code));
+
+export const currencySymbol = (currency: Currency) => {
+    const locale = navigator.language;
+    return Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency.code,
+        currencyDisplay: 'narrowSymbol',
+    }).format(1).replace(/\d./g, '');
+}
+
+export const currencyLabel = (currency: Currency) => {
+    return `${currency.currency} (${currencySymbol(currency)})`
+}
+
+export const currencyFormat = (currency: Currency, amount: number) => {
+    const locale = navigator.language;
+    return Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency.code,
+        currencyDisplay: 'narrowSymbol',
+    }).format(amount)
+}
