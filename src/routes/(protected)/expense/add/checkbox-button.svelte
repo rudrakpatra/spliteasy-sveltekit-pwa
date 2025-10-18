@@ -5,6 +5,7 @@
 	import { getCheckboxGroupContext } from './checkbox-group.svelte';
 	import { cn } from '$lib/utils';
 	import { onMount, onDestroy } from 'svelte';
+	import { VIBRATE_DURATION } from '$lib/constants';
 
 	let {
 		selected = $bindable(false),
@@ -17,7 +18,7 @@
 		id: string;
 		longPressDuration?: number;
 		class?: string;
-	} = $props();
+	} & CheckboxPrimitive.RootProps = $props();
 
 	const group = getCheckboxGroupContext();
 
@@ -56,7 +57,6 @@
 			lastTouchedCheckboxId = id;
 			group.startDrag(!selected);
 			selected = !selected;
-			navigator.vibrate?.(50);
 		}, longPressDuration);
 	}
 
@@ -78,7 +78,6 @@
 		if (longPressTimer && !longPressTriggered) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
-			navigator.vibrate?.(10);
 			// Don't toggle here - let bits-ui handle it naturally
 		} else if (longPressTriggered) {
 			// Long press was triggered, prevent the default click
@@ -111,6 +110,10 @@
 			e.stopPropagation();
 		}
 	}
+
+	$effect(() => {
+		(selected || !selected) && navigator.vibrate?.(VIBRATE_DURATION) && checkboxRef?.focus();
+	});
 </script>
 
 <div

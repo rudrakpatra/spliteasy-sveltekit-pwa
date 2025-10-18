@@ -20,12 +20,20 @@ export const expenseItemsSchema = z
         })
     )
 
+export const payersSchema = z.array(
+    z.object({
+        userId: userIdSchema,
+        amountExpression: amountExpressionSchema, // e.g., "200", "150.50"
+    })
+).min(1, 'At least one payer is required')
+
 export const createExpenseSchema = z.object({
     name: z.string().min(1, 'Expense name is required').max(100, 'Name is too long'),
     groupId: z.uuid({ error: 'Group is required' }),
     currency: currencyCodeSchema.nullable().refine((value) => value !== null, {
         message: 'Currency is required',
     }).transform((value) => value as CurrencyCode),
+    payers: payersSchema,
     items: expenseItemsSchema,
     category: categorySchema.optional(),
     notes: z.string().optional(),
@@ -82,6 +90,40 @@ export const createExpenseSchema = z.object({
             });
         }
     });
+
+    const totalPaid = data.payers.reduce((sum, payer) => {
+        try {
+            return sum + evaluate(payer.amountExpression);
+        } catch (error) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'Invalid payment amount',
+                path: ['payers', data.payers.indexOf(payer), 'amountExpression'],
+            });
+            return sum;
+        }
+    }, 0);
+
+
+    const totalItemAmount = data.items.reduce((sum, item) => {
+        try {
+            return sum + evaluate(item.amountExpression);
+        } catch {
+            return sum;
+        }
+    }, 0);
+
+    const digits = CURRENCY_MAP.get(data.currency)?.digits || 2;
+    const tolerance = 10 ** -digits;
+
+    // Ensure total paid matches total items
+    if (Math.abs(totalPaid - totalItemAmount) > tolerance) {
+        ctx.addIssue({
+            code: 'custom',
+            message: `Total paid (${totalPaid.toFixed(digits)}) must equal total items (${totalItemAmount.toFixed(digits)})`,
+            path: ['payers'],
+        });
+    }
 })
 
 export const editExpenseSchema = createExpenseSchema.safeExtend({
@@ -90,11 +132,15 @@ export const editExpenseSchema = createExpenseSchema.safeExtend({
 
 export const transformedCreateExpenseSchema = createExpenseSchema.transform((data) => {
     const digits = CURRENCY_MAP.get(data.currency)?.digits || 2;
-    const userIds = new Set(data.items.flatMap((item) => item.split.map((s) => s.userId)));
+    const userIds = new Set([
+        ...data.payers.map(p => p.userId),
+        ...data.items.flatMap((item) => item.split.map((s) => s.userId))
+    ]);
+
     const splits: z.infer<typeof insertExpenseInputSchema>['splits'] = [];
 
+    // Calculate how much each user owes from items
     const getOwesAmount = (items: z.infer<typeof expenseItemsSchema>, userId: UserId): NumberString => {
-        // for each item, find the share if share is +ve for the user and sum them up
         const owesAmount = items.reduce((total, item) => {
             const shareValues = evaluateShares(item.amountExpression, item.split.map((s) => s.shareExpression));
             const userIndex = item.split.findIndex((s) => s.userId === userId);
@@ -105,30 +151,34 @@ export const transformedCreateExpenseSchema = createExpenseSchema.transform((dat
             return total;
         }, 0);
         return numberStringSchema.decode(owesAmount.toFixed(digits));
-    }
-    const getPaidAmount = (items: z.infer<typeof expenseItemsSchema>, userId: UserId): NumberString => {
-        // for each item, find the share if share is -ve for the user and sum them up
-        const paidAmount = items.reduce((total, item) => {
-            const shareValues = evaluateShares(item.amountExpression, item.split.map((s) => s.shareExpression));
-            const userIndex = item.split.findIndex((s) => s.userId === userId);
-            const userShare = shareValues[userIndex];
-            if (userShare && userShare <= 0) {
-                return total + userShare;
+    };
+
+    // Calculate how much each user paid from payers
+    const getPaidAmount = (payers: typeof data.payers, userId: UserId): NumberString => {
+        const paidAmount = payers.reduce((total, payer) => {
+            if (payer.userId === userId) {
+                try {
+                    return total + evaluate(payer.amountExpression);
+                } catch {
+                    return total;
+                }
             }
             return total;
         }, 0);
         return numberStringSchema.decode(paidAmount.toFixed(digits));
-    }
-    //add a split for each user
+    };
+
+    // Create splits for all users involved
     userIds.forEach(userId => {
         splits.push({
             userId,
             currency: data.currency,
             owesAmount: getOwesAmount(data.items, userId),
-            paidAmount: getPaidAmount(data.items, userId),
-        })
-    })
-    const out: z.infer<typeof insertExpenseInputSchema> = {
+            paidAmount: getPaidAmount(data.payers, userId),
+        });
+    });
+
+    return {
         groupId: data.groupId,
         name: data.name,
         metadata: {
@@ -137,7 +187,7 @@ export const transformedCreateExpenseSchema = createExpenseSchema.transform((dat
             receiptImageUrl: data.receiptImageUrl || null,
         },
         splits,
-    }
-    return out;
-})
+    };
+});
+
 

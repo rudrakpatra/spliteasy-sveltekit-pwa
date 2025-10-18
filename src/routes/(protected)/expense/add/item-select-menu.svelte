@@ -14,6 +14,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import Check from '@lucide/svelte/icons/check';
+	import type { UserId } from '$lib/shared/schema/user';
 
 	let { open = $bindable(false), items = $bindable([]) }: { open: boolean; items: Item[] } =
 		$props();
@@ -56,6 +57,8 @@
 	const { membersQuery } = getExpenseFormContext();
 
 	let openSplit = $state(false);
+
+	let splitData = $state<{ user: UserId; share: number }[]>([]);
 </script>
 
 <!-- <VisualViewportView>
@@ -120,7 +123,8 @@
 <Drawer.Root bind:open={openSplit} repositionInputs={false} direction="bottom">
 	<Drawer.Content style="padding-bottom: env(keyboard-inset-height, 0px);">
 		{#snippet children()}
-			{@const data = [
+			{@const { data, isLoading, isSuccess, error } = $membersQuery}
+			<!-- {@const data = [
 				{ user: { id: 1, name: 'Alice', img: '' }, share: 1 },
 				{ user: { id: 2, name: 'Bob', img: '' }, share: 1 },
 				// { user: { id: 3, name: 'Charlie', img: '' }, share: 1 },
@@ -140,11 +144,11 @@
 				// { user: { id: 17, name: 'Pete', img: '' }, share: 1 },
 				// { user: { id: 18, name: 'Quinn', img: '' }, share: 1 },
 				{ user: { id: 19, name: 'Jonah', img: '' }, share: 1 }
-			]}
+			]} -->
 			{@const selectedItems = items.filter((item) => item.selected)}
 
 			<Drawer.Header>
-				<Drawer.Title class="flex items-center justify-between gap-2">
+				<Drawer.Title class="flex items-start justify-between gap-2">
 					<Drawer.Close>
 						<Button size="icon-lg" variant="ghost"><X class="size-8" /></Button>
 					</Drawer.Close>
@@ -163,7 +167,14 @@
 						<span class="whitespace-nowrap text-muted-foreground"> by shares</span>
 					</div>
 					<Drawer.Close>
-						<Button size="icon-lg" variant="ghost"><Check class="size-8" /></Button>
+						<Button
+							onclick={() => {
+								openSplit = false;
+								splitData = [];
+							}}
+							size="icon-lg"
+							variant="ghost"><Check class="size-8" /></Button
+						>
 					</Drawer.Close>
 				</Drawer.Title>
 			</Drawer.Header>
@@ -200,7 +211,7 @@
 			</div>
 			<!-- Fixed Footer -->
 			<Drawer.Footer class="text-center text-sm text-muted-foreground">
-				{data.reduce((sum, d) => sum + d.share, 0)} Total shares
+				{1} Total shares
 			</Drawer.Footer>
 		{/snippet}
 	</Drawer.Content>
