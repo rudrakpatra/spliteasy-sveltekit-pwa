@@ -31,7 +31,7 @@
 	<div class="rounded-lg border bg-card p-6 shadow-sm">
 		<div class="flex justify-between">
 			<h1 class="mb-6 text-2xl font-bold">Groups</h1>
-			<Button href="/group/add" variant="ghost">Add <Plus class="h-4 w-4" /></Button>
+			<Button href="/group/add" variant="ghost"><Plus /> Add</Button>
 		</div>
 		<div class="space-y-6">
 			{#if $groupsQuery.isPending}
@@ -50,7 +50,7 @@
 					{#each $groupsQuery.data.items as group (group.id)}
 						<a class="block" href={`/groups/${group.id}`}>
 							<div class="flex items-center space-x-4">
-								<Avatar.Root class="block size-20 text-4xl">
+								<Avatar.Root class="block size-18 text-4xl">
 									<Avatar.Image src={group.img} alt={group.name} />
 									<Avatar.Fallback>{group.name.charAt(0)}</Avatar.Fallback>
 								</Avatar.Root>

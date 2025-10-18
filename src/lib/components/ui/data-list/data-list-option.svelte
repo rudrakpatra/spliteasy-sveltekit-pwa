@@ -1,55 +1,44 @@
 <!-- DataListOption.svelte -->
 <script lang="ts">
-	import { VIBRATE_DURATION } from '$lib/constants';
-	import { getContext } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import type { HTMLButtonAttributes } from 'svelte/elements';
 
-	interface Props {
-		value?: string;
+	interface Props extends HTMLButtonAttributes {
 		label?: string;
-		onSelect?: (ev: { target: HTMLElement; preventDefault: () => void }) => void;
+		onDown?: (e: Event) => void;
+		onSelect?: (e: Event) => void;
 		children?: Snippet;
 	}
 
-	let { value, label, onSelect, children }: Props = $props();
-
-	const context = getContext<{ target: HTMLInputElement | null }>('datalist-context');
+	let { label, onDown, onSelect, children, ...restProps }: Props = $props();
 
 	function handleClick(e: Event) {
 		e.preventDefault();
-		// to stop the actual activeElement to loose focus
-		if (!context.target) return;
-		const target = context.target;
-		// if not activeElement
-		// may happen as the list is transitioning
-		if (target !== document.activeElement) target.focus();
-		let defaultPrevented = false;
-		const ev = {
-			target,
-			preventDefault: () => {
-				defaultPrevented = true;
-			}
-		};
-		onSelect && onSelect(ev);
-		if (defaultPrevented) return;
-		if (value) {
-			// command add text
-			navigator.vibrate(VIBRATE_DURATION);
-			document.execCommand('insertText', false, value);
-		}
+		onSelect && onSelect(e);
+	}
+
+	function handleContextMenu(e: Event) {
+		e.preventDefault();
+		onSelect && onSelect(e);
 	}
 
 	function handlePointerdown(e: Event) {
+		onDown && onDown(e);
 		e.preventDefault();
 		e.stopPropagation();
-		// to stop the actual activeElement to loose focus
 	}
 </script>
 
-<button onpointerdown={handlePointerdown} onclick={handleClick}>
+<button
+	tabindex={-1}
+	onpointerdown={handlePointerdown}
+	onclick={handleClick}
+	oncontextmenu={handleContextMenu}
+	{...restProps}
+>
 	{#if children}
 		{@render children()}
 	{:else}
-		{label ?? value}
+		{label}
 	{/if}
 </button>

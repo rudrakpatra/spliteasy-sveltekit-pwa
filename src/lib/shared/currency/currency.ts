@@ -1,4 +1,4 @@
-import { CURRENCY_MAP, COUNTRY_MAP, type CountryCode, type Currency, CURRENCY_ENUM, currencies } from './currency-codes';
+import { CURRENCY_MAP, COUNTRY_MAP, type CountryCode, type Currency, CURRENCY_ENUM, currencies, type CurrencyCode } from './currency-codes';
 import { withTimeout } from '$lib/utils';
 import z from 'zod';
 /**
@@ -115,11 +115,14 @@ export const currencyLabel = (currency: Currency) => {
     return `${currency.currency} (${currencySymbol(currency)})`
 }
 
-export const currencyFormat = (currency: Currency, amount: number) => {
+export const currencyFormat = (currency: Currency | CurrencyCode, amount: number) => {
     const locale = navigator.language;
+    let code = "USD"
+    if (typeof currency === 'string') code = currency
+    else if (currency) code = currency.code
     return Intl.NumberFormat(locale, {
         style: 'currency',
-        currency: currency.code,
+        currency: code,
         currencyDisplay: 'narrowSymbol',
     }).format(amount)
 }

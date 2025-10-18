@@ -17,8 +17,8 @@
 	import BracketClose from '$lib/components/icons/bracket-close.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { VIBRATE_DURATION } from '$lib/constants';
-	import { VisualViewportView } from '$lib/components/ui/visual-viewport-view';
 	import { mathPattern } from '../math-regex';
+	import { KeyboardAwareView } from '$lib/components/ui/view';
 
 	// DSL context
 	const participants = ['alice', 'bob', 'charlie', 'david'];
@@ -487,7 +487,7 @@
 	<p>inputMode:{inputMode}</p>
 </span>
 
-<VisualViewportView forceOverlaysContent>
+<KeyboardAwareView>
 	{#if hasSuggestions}
 		<div
 			class="absolute inset-0 top-auto flex h-12 items-start gap-3 overflow-auto border-t border-border bg-background px-3 py-1 text-foreground"
@@ -556,7 +556,7 @@
 			{/if}
 		</div>
 	{/if}
-</VisualViewportView>
+</KeyboardAwareView>
 
 <style>
 	.editor-container :global(.tiptap) {

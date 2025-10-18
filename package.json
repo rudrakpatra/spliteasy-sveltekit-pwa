@@ -88,6 +88,7 @@
 		"jsonwebtoken": "^9.0.2",
 		"mathjs": "^15.0.0",
 		"superjson": "^2.2.2",
+		"svelte-dnd-action": "^0.9.65",
 		"trpc-svelte-query-adapter": "^2.3.16",
 		"trpc-sveltekit": "^3.6.3",
 		"zod": "^4.1.12"

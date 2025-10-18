@@ -8,6 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Avatar, AvatarImage, AvatarFallback } from '$lib/components/ui/avatar';
 	import Member from './member.svelte';
+	import Plus from '@tabler/icons-svelte/icons/plus';
 
 	let { data }: { data: PageData } = $props();
 
@@ -55,8 +56,9 @@
 			<Card.Header>
 				<div class="flex items-center justify-between">
 					<Card.Title>Members</Card.Title>
-					<Button variant="outline" onclick={() => goto(`/group/${data.id}/member/add`)}>
-						Add Member
+					<Button variant="ghost" onclick={() => goto(`/group/${data.id}/member/add`)}>
+						<Plus />
+						Add
 					</Button>
 				</div>
 			</Card.Header>

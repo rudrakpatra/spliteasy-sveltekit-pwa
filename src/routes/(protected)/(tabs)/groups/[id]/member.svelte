@@ -18,6 +18,6 @@
 	</Avatar.Root>
 	<div class="flex-1">
 		<p class="font-medium">{$user.data?.name}</p>
-		<p class="text-sm text-muted-foreground">{$user.data?.email}</p>
+		<p class="text-xs text-muted-foreground">{$user.data?.email}</p>
 	</div>
 </div>

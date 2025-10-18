@@ -31,7 +31,7 @@
 	<div class="rounded-lg border bg-card p-6 shadow-sm">
 		<div class="flex justify-between">
 			<h1 class="mb-6 text-2xl font-bold">Dashboard</h1>
-			<Button href="/expense/add" variant="ghost">Add <Plus class="h-4 w-4" /></Button>
+			<Button href="/expense/add" variant="ghost"><Plus /> Add</Button>
 		</div>
 		<div class="space-y-6">
 			{#if $pendingApprovalsQuery.isPending}

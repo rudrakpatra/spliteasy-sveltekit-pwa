@@ -137,3 +137,7 @@
     caret-color: var(--primary);
   }
 }
+
+input::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
