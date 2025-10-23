@@ -1,8 +1,11 @@
-// useActiveElement.svelte.ts
+// activeElementContext.svelte.ts
+import { getContext, hasContext, setContext } from 'svelte';
 import { browser } from '$app/environment';
 import { onDestroy, onMount, untrack } from 'svelte';
 
-export function useActiveElement() {
+const ACTIVE_ELEMENT_KEY = Symbol('activeElement');
+
+function createActiveElementContext() {
     let activeElement = $state<Element | null>(
         browser ? document.activeElement : null
     );
@@ -13,7 +16,6 @@ export function useActiveElement() {
         });
     }
 
-    // Track focus and blur events on the entire document
     onMount(() => {
         if (browser) {
             document.addEventListener('focusin', updateActiveElement);
@@ -21,7 +23,6 @@ export function useActiveElement() {
         }
     });
 
-    // Cleanup listeners when component is destroyed
     onDestroy(() => {
         if (browser) {
             document.removeEventListener('focusin', updateActiveElement);
@@ -34,4 +35,14 @@ export function useActiveElement() {
             return activeElement;
         }
     };
+}
+
+export function useActiveElement() {
+    if (hasContext(ACTIVE_ELEMENT_KEY)) {
+        return getContext<ReturnType<typeof createActiveElementContext>>(ACTIVE_ELEMENT_KEY);
+    }
+
+    const context = createActiveElementContext();
+    setContext(ACTIVE_ELEMENT_KEY, context);
+    return context;
 }

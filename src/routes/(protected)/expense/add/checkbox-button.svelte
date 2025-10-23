@@ -32,6 +32,7 @@
 		group.registerCheckbox(
 			id,
 			containerElement,
+			checkboxRef,
 			() => checked,
 			(val) => {
 				if (group.isMultiSelectActive && lastTouchedCheckboxId !== id) {
@@ -76,7 +77,6 @@
 			navigator.vibrate?.(VIBRATE_DURATION);
 			prevChecked = checked;
 			onCheckedChange?.(checked);
-			checkboxRef?.focus();
 		}
 	});
 </script>

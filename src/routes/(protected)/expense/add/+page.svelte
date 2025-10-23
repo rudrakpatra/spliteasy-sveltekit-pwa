@@ -14,6 +14,7 @@
 	import GroupChangeDialog from './group-change-dialog.svelte';
 	import ContextViewer from './context-viewer.svelte';
 	import { evaluate } from '$lib/shared/schema/math';
+	import { CURRENCY_MAP } from '$lib/shared/currency/currency-codes';
 
 	let { data }: { data: PageData } = $props();
 
@@ -36,7 +37,7 @@
 	const form = superForm(defaults(zod4(createExpenseSchema)), {
 		SPA: true,
 		dataType: 'json',
-		// validators: zod4(createExpenseSchema),
+		validators: false, //zod4(createExpenseSchema),
 		resetForm: false,
 		onUpdate({ form }) {
 			if (form.valid) {
@@ -146,6 +147,14 @@
 		form,
 		get submitting() {
 			return $createExpense.isPending;
+		},
+		currency: {
+			get current() {
+				return $formData.currency;
+			},
+			get digits() {
+				return CURRENCY_MAP.get($formData.currency)?.digits ?? 2;
+			}
 		},
 		payers: {
 			get total() {

@@ -1,11 +1,23 @@
 import z from "zod";
 
 export const categories = {
+    INCOME: {
+        code: 'INCOME',
+        name: 'Income',
+        icon: '💰',
+        description: 'Income',
+    },
+    RECEIPT: {
+        code: 'RECEIPT',
+        name: 'Receipt',
+        icon: '🧾',
+        description: 'Bills, Invoices & Receipts',
+    },
     PAYMENT: {
         code: 'PAYMENT',
         name: 'Payment',
         icon: '💳',
-        description: 'Payment',
+        description: 'Transfers & Reimbursements',
     },
     GROCERIES: {
         code: 'GROCERIES',

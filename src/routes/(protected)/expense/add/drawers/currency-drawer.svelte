@@ -42,7 +42,7 @@
 									$formData.currency = currency.code;
 									open = false;
 								}}
-								class="flex items-center justify-between gap-2"
+								class="flex items-center justify-between gap-2 aria-selected:bg-transparent"
 							>
 								<b>{currency.currency}</b>
 								<span>{currency.code}</span>

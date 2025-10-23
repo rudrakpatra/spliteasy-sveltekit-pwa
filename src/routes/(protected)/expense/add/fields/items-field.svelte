@@ -1,21 +1,17 @@
 <script lang="ts">
 	import { generateId, getExpenseFormContext } from '../context.svelte';
 	import * as Form from '$lib/components/ui/form';
-	import * as Avatar from '$lib/components/ui/avatar';
 	import { Input } from '$lib/components/ui/input';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CheckboxButton from '../checkbox-button.svelte';
 	import CheckboxGroup from '../checkbox-group.svelte';
 	import Calculator from '../datalists/calculator.svelte';
-	import { useActiveElement } from '$lib/hooks/use-active-element.svelte';
+	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
 	import LockSquareRoundedFilled from '@tabler/icons-svelte/icons/lock-square-rounded-filled';
 	import { page } from '$app/state';
 	import { trpc } from '$lib/trpc/client';
 	import { uuidSchema } from '$lib/shared/schema/uuid';
 	import ItemOptions from '../datalists/item-options.svelte';
-	import { Badge } from '$lib/components/ui/badge';
-	import X from '@lucide/svelte/icons/x';
-	import { CURRENCY_MAP } from '$lib/shared/currency/currency-codes';
 
 	const ctx = getExpenseFormContext();
 	const { form } = ctx;
@@ -40,16 +36,15 @@
 	const total = $derived($formData.items.length);
 	const filled = $derived($formData.items.filter((item) => item.amountExpression !== '').length);
 	const unfilled = $derived(total - filled);
-	const digits = $derived(CURRENCY_MAP.get($formData.currency)?.digits ?? 2);
 	const remaining = $derived.by(() => {
 		const remainingAmount = (ctx.payers.total - ctx.items.total) / unfilled;
 		return isNaN(remainingAmount) || !isFinite(remainingAmount)
 			? '0'
-			: remainingAmount.toFixed(digits);
+			: remainingAmount.toFixed(ctx.currency.digits);
 	});
 
 	// Auto-add empty item row - use immutable updates
-	$effect(() => {
+	$effect.pre(() => {
 		if (filled === total || total === 0) {
 			formData.update((current) => {
 				return {
@@ -67,23 +62,27 @@
 		}
 	});
 
-	$effect.pre(() => {
-		const currentSplits = $formData.splits;
-		const hasEmptySplits = currentSplits.some((split) => split.itemIds.length === 0);
-
-		if (hasEmptySplits) {
-			formData.update((current) => ({
-				...current,
-				splits: current.splits.filter((split) => split.itemIds.length > 0)
-			}));
-		}
-	});
-
 	// Active element tracking for calculator
 	const activeElement = useActiveElement();
 	const calculatorOpen = $derived.by(() => {
 		const current = activeElement.current;
-		return current?.id.startsWith(`item-amt-${id}-`) || current?.id.startsWith(`split-`) || false;
+		return current?.id.startsWith(`item-amt-${id}-`) || false;
+	});
+
+	// Deselect when focused on something outside of the items
+	$effect(() => {
+		if (activeElement.current?.id) {
+			console.log(activeElement.current.id);
+			if (
+				!(
+					activeElement.current.id.startsWith(`item-select-${id}-`) ||
+					activeElement.current.id.startsWith(`item-name-${id}-`) ||
+					activeElement.current.id.startsWith(`item-amt-${id}-`)
+				)
+			) {
+				ctx.items.selected.clear();
+			}
+		}
 	});
 
 	const openItemOptions = $derived(ctx.items.selected.size > 0 && !calculatorOpen);
@@ -100,7 +99,9 @@
 				<Skeleton class="h-9 w-full" />
 			{:else if isSuccess}
 				<CheckboxGroup groupId="items-group">
-					<section class="grid grid-cols-[auto_auto_1fr] items-center gap-2 overflow-x-auto p-2">
+					<section
+						class="grid grid-cols-[auto_auto_1fr] items-center gap-2 overflow-x-auto rounded-md px-3 py-2 outline outline-border"
+					>
 						{#each $formData.items as item (item.id)}
 							{@const idx = $formData.items.findIndex((i) => i.id === item.id)}
 							{@const hasSplit = $formData.splits.some((s) => s.itemIds.includes(item.id))}
@@ -123,6 +124,7 @@
 									/>
 								{:else}
 									<CheckboxButton
+										id={`item-select-${id}-${item.id}`}
 										tabindex={2}
 										checked={ctx.items.selected.has(item.id)}
 										onCheckedChange={(checked) => {
@@ -132,7 +134,6 @@
 												ctx.items.selected.delete(item.id);
 											}
 										}}
-										id={`item-select-${id}-${item.id}`}
 									/>
 								{/if}
 							</div>
@@ -147,23 +148,26 @@
 									class="field-sizing-content max-w-30 min-w-9 truncate text-left"
 									autocomplete="off"
 									inputmode="text"
+									data-scroll-into-view="true"
 									tabindex={3}
 								/>
 							</div>
 
-							<div class="ml-auto">
+							<label class="grid grid-cols-[1fr_auto]">
+								<span></span>
 								<Input
 									id={`item-amt-${id}-${item.id}`}
 									type="text"
 									placeholder={remaining}
 									variant="underlined"
-									class="field-sizing-content max-w-[16ch] min-w-[8ch] truncate text-center"
+									class="field-sizing-content max-w-30 min-w-9 truncate text-center"
 									autocomplete="off"
 									inputmode="numeric"
+									data-scroll-into-view="true"
 									bind:value={$formData.items[idx].amountExpression}
 									tabindex={4}
 								/>
-							</div>
+							</label>
 						{/each}
 					</section>
 				</CheckboxGroup>
@@ -177,142 +181,6 @@
 					Add items and assign value
 				{/if}
 			</Form.Description>
-		{/snippet}
-	</Form.Control>
-	<Form.FieldErrors />
-</Form.Field>
-
-<Form.Field {form} name="splits">
-	<Form.Control>
-		{#snippet children({ props })}
-			{@const { data: members, isLoading, isSuccess, error } = $membersQuery}
-
-			<Form.Label>Splits</Form.Label>
-
-			{#if isLoading}
-				<Skeleton class="h-9 w-full" />
-			{:else if isSuccess}
-				<div class="space-y-2">
-					{#each $formData.splits as split (split.id)}
-						{@const items = $formData.items.filter((i) => split.itemIds.includes(i.id))}
-						<div class="space-y-2 rounded-md outline outline-border">
-							<Form.Label class="overflow-x-auto p-2 pb-0">
-								{#each items as item}
-									<Badge
-										class="pr-1"
-										type="button"
-										onclick={() => {
-											formData.update((current) => {
-												// Remove item from the split - immutable update
-												return {
-													...current,
-													splits: current.splits.map((s) =>
-														s.id === split.id
-															? {
-																	...s,
-																	itemIds: s.itemIds.filter((i) => i !== item.id)
-																}
-															: s
-													)
-												};
-											});
-										}}
-										variant="outline"
-									>
-										<span class="max-w-[16ch] min-w-[8ch] justify-start truncate">
-											{item.name || `#${item.id}`}
-										</span>
-										<X />
-									</Badge>
-								{/each}
-							</Form.Label>
-							<div class="group grid grid-cols-[1fr_auto] items-center gap-2 p-2">
-								{#each members as { user }}
-									{@const shareIndex = split.shares.findIndex((s) => s.userId === user.id)}
-									{@const shareValue =
-										shareIndex >= 0 ? split.shares[shareIndex].shareExpression : ''}
-
-									<label class="flex items-center gap-2" for={`split-${split.id}-share-${user.id}`}>
-										<Avatar.Root class="size-9 flex-shrink-0">
-											<Avatar.Image src={user.img} alt={user.name} />
-											<Avatar.Fallback>
-												{user.name.slice(0, 1).toUpperCase()}
-											</Avatar.Fallback>
-										</Avatar.Root>
-										<span class="flex-1 font-medium">{user.name}</span>
-									</label>
-									<Input
-										id={`split-${split.id}-share-${user.id}`}
-										type="text"
-										placeholder={'0'}
-										value={shareValue}
-										oninput={(e) => {
-											formData.update((current) => {
-												const value = e.currentTarget.value;
-												const splitIndex = current.splits.findIndex((s) => s.id === split.id);
-												const currentSplit = current.splits[splitIndex];
-												const existingShareIndex = currentSplit.shares.findIndex(
-													(s) => s.userId === user.id
-												);
-
-												// Create new splits array with immutable updates
-												const newSplits = [...current.splits];
-												const newShares = [...currentSplit.shares];
-
-												if (existingShareIndex >= 0) {
-													if (value) {
-														newShares[existingShareIndex] = {
-															...newShares[existingShareIndex],
-															shareExpression: value
-														};
-													} else {
-														newShares.splice(existingShareIndex, 1);
-													}
-												} else if (value) {
-													newShares.push({
-														userId: user.id,
-														shareExpression: value
-													});
-												}
-
-												newSplits[splitIndex] = {
-													...currentSplit,
-													shares: newShares
-												};
-
-												return {
-													...current,
-													splits: newSplits
-												};
-											});
-										}}
-										variant="underlined"
-										class="field-sizing-content min-w-9 text-center"
-										autocomplete="off"
-										inputmode="numeric"
-									/>
-								{/each}
-							</div>
-							<Form.Description class="px-2 pb-2">
-								{split.shares.reduce((sum, s) => {
-									const val = parseFloat(s.shareExpression) || 0;
-									return sum + val;
-								}, 0)} Total shares
-							</Form.Description>
-						</div>
-					{/each}
-				</div>
-
-				<Form.Description>
-					{#if $formData.splits.length > 0}
-						{$formData.splits.length} Total split{$formData.splits.length === 1 ? '' : 's'}
-					{:else}
-						Select items and split them by shares
-					{/if}
-				</Form.Description>
-			{:else if error}
-				<div class="text-destructive">Error loading members</div>
-			{/if}
 		{/snippet}
 	</Form.Control>
 	<Form.FieldErrors />

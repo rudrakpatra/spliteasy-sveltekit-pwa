@@ -109,7 +109,7 @@
 	<title>Create Group - SplitEasy</title>
 </svelte:head>
 
-<Card.Root class="border-0 shadow-none">
+<Card.Root class="mx-auto max-w-2xl border-0 shadow-none">
 	<Card.Header>
 		<Card.Title>Create New Group</Card.Title>
 		<Card.Description>Create a group to split expenses with friends or family</Card.Description>

@@ -18,6 +18,7 @@
 				placeholder="Expense Name"
 				bind:value={$formData.name}
 				autocomplete="off"
+				data-scroll-into-view="true"
 			/>
 		{/snippet}
 	</Form.Control>

@@ -8,10 +8,14 @@
 	import { Input, InputGroup, InputGroupButton } from '$lib/components/ui/input-group';
 	import InputGroupAddon from '$lib/components/ui/input-group/input-group-addon.svelte';
 	import { useCurrencySuggestions } from '$lib/hooks/use-currency-suggestions';
+	import { usePWA } from '$lib/hooks/use-pwa.svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	let { data }: { data: PageData } = $props();
 
 	const currencySuggestions = useCurrencySuggestions();
+
+	const pwa = usePWA();
 </script>
 
 <svelte:head>
@@ -89,10 +93,33 @@
 				<h3 class="mb-2 text-lg font-medium">Virtual Keyboard</h3>
 				<div class="space-y-1 text-sm text-muted-foreground">
 					<p>
-						{(navigator as any).virtualKeyboard?.overlaysContent
-							? 'overlaysContent'
-							: 'does not overlaysContent'}
+						{#if (navigator as any).virtualKeyboard?.overlaysContent}
+							<Badge variant="default"><Check /> Overlays Content</Badge>
+						{:else}
+							<Badge variant="destructive"><X /> Does Not Overlays Content</Badge>
+						{/if}
 					</p>
+				</div>
+			</div>
+
+			<div class="border-t pt-4">
+				<h3 class="mb-2 text-lg font-medium">PWA</h3>
+				<div class="space-y-1 text-sm text-muted-foreground">
+					<p>
+						{#if pwa.isStandalone}
+							<Badge variant="default"><Check /> Standalone</Badge>
+						{:else}
+							<Badge variant="destructive"><X /> Not Standalone</Badge>
+						{/if}
+					</p>
+					<p>
+						{#if pwa.isInstalled}
+							<Badge variant="default"><Check /> Installed</Badge>
+						{:else}
+							<Badge variant="destructive"><X /> Not Installed</Badge>
+						{/if}
+					</p>
+					<Button disabled={!pwa.canInstall} onclick={pwa.promptInstall}>Install</Button>
 				</div>
 			</div>
 		</div>

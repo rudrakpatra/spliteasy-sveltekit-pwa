@@ -9,6 +9,7 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { untrack } from 'svelte';
 	import { uuidSchema } from '$lib/shared/schema/uuid';
+	import * as Avatar from '$lib/components/ui/avatar';
 
 	const ctx = getExpenseFormContext();
 	const { form, group } = ctx;
@@ -33,6 +34,8 @@
 			}
 		}
 	});
+
+	let selectedGroup = $derived($groupsQuery.data?.items.find((f) => f.id === group.current));
 </script>
 
 <Form.Field {form} name="groupId">
@@ -40,8 +43,11 @@
 		{#snippet children({ props })}
 			{#snippet trigger()}
 				<Button {...props} onclick={() => (groupDrawerOpen = true)} variant="outline" type="button">
-					{#if $groupsQuery.data?.items.find((f) => f.id === group.current)?.name}
-						{$groupsQuery.data?.items.find((f) => f.id === group.current)?.name}
+					{#if selectedGroup}
+						<Avatar.Root class="size-6">
+							<Avatar.Image src={selectedGroup.img} />
+						</Avatar.Root>
+						{selectedGroup.name}
 					{:else}
 						{#if $groupsQuery.isLoading}<Spinner />{/if}Select Group
 					{/if}

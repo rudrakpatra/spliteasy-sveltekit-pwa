@@ -5,6 +5,8 @@
 	import { categories } from '$lib/shared/category/category';
 	import ChevronDown from '@tabler/icons-svelte/icons/chevron-down';
 	import CategoryDrawer from '../drawers/category-drawer.svelte';
+	import { useCategorySuggestion } from '$lib/hooks/use-category-suggestion';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	const ctx = getExpenseFormContext();
 	const { form } = ctx;
@@ -12,26 +14,44 @@
 
 	let categoryDrawerOpen = $state(false);
 
-	const selectedCategoryName = $derived(
-		Object.values(categories).find((c) => c.code === $formData.category)?.name || 'Select Category'
-	);
+	//auto detect category
+	const autoCategory = useCategorySuggestion();
+
+	$effect(() => {
+		if ($autoCategory.data && !$formData.category) {
+			formData.update((current) => ({
+				...current,
+				category: $autoCategory.data
+			}));
+		}
+	});
 </script>
 
 <Form.Field {form} name="category">
 	<Form.Control>
 		{#snippet children({ props })}
 			<Form.Label>Category</Form.Label>
-			<Button
-				{...props}
-				variant="outline"
-				type="button"
-				onclick={() => {
-					categoryDrawerOpen = true;
-				}}
-			>
-				{selectedCategoryName}
-				<ChevronDown />
-			</Button>
+			{#snippet trigger()}
+				{@const category = Object.values(categories).find((c) => c.code === $formData.category)}
+				<Button
+					{...props}
+					variant="outline"
+					type="button"
+					onclick={() => {
+						categoryDrawerOpen = true;
+					}}
+				>
+					{#if category}
+						<span class="text-xl">{category.icon}</span>{category.name}
+					{:else if $autoCategory.isLoading}
+						<Spinner />Detecting...
+					{:else}
+						Select Category
+					{/if}
+					<ChevronDown />
+				</Button>
+			{/snippet}
+			{@render trigger()}
 		{/snippet}
 	</Form.Control>
 	<Form.Description>Choose category for this expense</Form.Description>

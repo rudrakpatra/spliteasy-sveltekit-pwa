@@ -10,6 +10,10 @@ type ExpenseFormContext = {
         readonly current: string;
         onChange: (groupId: string) => void;
     };
+    currency: {
+        readonly current: string;
+        readonly digits: number;
+    };
     receipt: {
         readonly blobUrl: string | undefined;
         readonly file: File | null;

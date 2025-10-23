@@ -12,7 +12,12 @@
 	<Form.Control>
 		{#snippet children({ props })}
 			<Form.Label>Notes</Form.Label>
-			<Textarea {...props} bind:value={$formData.notes} placeholder="Add any additional notes..." />
+			<Textarea
+				{...props}
+				bind:value={$formData.notes}
+				placeholder="Add any additional notes..."
+				data-scroll-into-view="true"
+			/>
 		{/snippet}
 	</Form.Control>
 	<Form.Description>Notes for this expense</Form.Description>

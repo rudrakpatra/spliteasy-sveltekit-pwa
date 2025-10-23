@@ -17,7 +17,9 @@
 	import NotesField from './fields/notes-field.svelte';
 	import CategoryField from './fields/category-field.svelte';
 	import * as DataList from '$lib/components/ui/data-list';
-	import { useActiveElement } from '$lib/hooks/use-active-element.svelte';
+	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
+	import KeyboardAwareView from '$lib/components/ui/view/keyboard-aware-view.svelte';
+	import { useIME } from '$lib/hooks/use-ime.svelte';
 
 	const ctx = getExpenseFormContext();
 	const { form } = ctx;
@@ -26,14 +28,23 @@
 	// Access mutation status from form
 	const isSubmitting = $derived(ctx.submitting);
 	const activeElement = useActiveElement();
+	const ime = useIME();
 	$effect(() => {
 		//scroll activeElement to view with padding
-		activeElement.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		if (activeElement.current instanceof HTMLElement) {
+			const scrollIntoView = activeElement.current.getAttribute('data-scroll-into-view');
+			if (scrollIntoView) {
+				// check if the rect is inside the ime safe region
+				if (!ime.isElementInSafeArea(activeElement.current)) {
+					activeElement.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+			}
+		}
 	});
 </script>
 
 <DataList.Root>
-	<Card.Root class="border-0 shadow-none">
+	<Card.Root class="mx-auto max-w-2xl border-0 shadow-none">
 		<Card.Header>
 			<Card.Title>Create New Expense</Card.Title>
 			<Card.Description>Create a new expense to split with friends</Card.Description>

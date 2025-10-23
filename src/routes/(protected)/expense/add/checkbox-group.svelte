@@ -12,6 +12,7 @@
 		registerCheckbox: (
 			id: string,
 			element: HTMLElement,
+			checkboxRef: HTMLElement | null,
 			getSelected: () => boolean,
 			setSelected: (val: boolean) => void
 		) => void;
@@ -40,6 +41,7 @@
 		string,
 		{
 			element: HTMLElement;
+			checkboxRef: HTMLElement | null;
 			getSelected: () => boolean;
 			setSelected: (val: boolean) => void;
 		}
@@ -60,10 +62,11 @@
 	function registerCheckbox(
 		id: string,
 		element: HTMLElement,
+		checkboxRef: HTMLElement | null,
 		getSelected: () => boolean,
 		setSelected: (val: boolean) => void
 	) {
-		checkboxRegistry.set(id, { element, getSelected, setSelected });
+		checkboxRegistry.set(id, { element, checkboxRef, getSelected, setSelected });
 	}
 
 	function unregisterCheckbox(id: string) {
@@ -79,6 +82,7 @@
 		for (const [id, checkbox] of checkboxRegistry) {
 			if (checkbox.element.contains(target)) {
 				checkbox.setSelected(dragState);
+				checkbox.checkboxRef?.focus();
 				break;
 			}
 		}

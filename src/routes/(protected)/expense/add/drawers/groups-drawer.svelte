@@ -3,6 +3,7 @@
 	import * as Drawer from '$lib/components/ui/drawer';
 	import * as Command from '$lib/components/ui/command';
 	import * as Empty from '$lib/components/ui/empty';
+	import * as Avatar from '$lib/components/ui/avatar';
 	import UsersGroup from '@tabler/icons-svelte/icons/users-group';
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
@@ -47,7 +48,11 @@
 									group.onChange(grp.id);
 									open = false;
 								}}
+								class="aria-selected:bg-transparent"
 							>
+								<Avatar.Root>
+									<Avatar.Image src={grp.img} />
+								</Avatar.Root>
 								<b>{grp.name}</b>
 							</Command.Item>
 						{/each}

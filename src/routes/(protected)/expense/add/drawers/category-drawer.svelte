@@ -21,7 +21,7 @@
 			style="height: calc(90svh - env(keyboard-inset-height, 0px));"
 		>
 			<Command.Root class="flex flex-col bg-transparent">
-				<Command.Input autofocus placeholder="Search categories..." />
+				<Command.Input placeholder="Search categories..." />
 				<Command.List class="max-h-full flex-1">
 					<Command.Empty>
 						<Empty.Root>
@@ -33,9 +33,10 @@
 							</Empty.Header>
 						</Empty.Root>
 					</Command.Empty>
-					<Command.Group title="Categories">
+					<Command.Group title="Categories" id="categories">
 						{#each Object.values(categories) as category}
 							<Command.Item
+								class="flex flex-col justify-start gap-2 px-3 py-2 text-center aria-selected:bg-transparent"
 								value={category.code}
 								keywords={[category.code, category.name]}
 								onSelect={() => {
@@ -43,7 +44,9 @@
 									open = false;
 								}}
 							>
-								{category.name}
+								<span class="text-4xl">{category.icon}</span>
+								<span class="text-sm font-semibold">{category.name}</span>
+								<span class="text-xs text-muted-foreground">{category.description}</span>
 							</Command.Item>
 						{/each}
 					</Command.Group>
@@ -52,3 +55,14 @@
 		</div>
 	</Drawer.Content>
 </Drawer.Root>
+
+<style>
+	:global(#categories [data-command-group-items]) {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+	}
+
+	:global(#categories [cmdk-group-items]) {
+		display: contents;
+	}
+</style>

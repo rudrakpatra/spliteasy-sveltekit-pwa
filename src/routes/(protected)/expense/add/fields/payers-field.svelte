@@ -7,7 +7,7 @@
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
 	import { uuidSchema } from '$lib/shared/schema/uuid';
-	import { useActiveElement } from '$lib/hooks/use-active-element.svelte';
+	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
 	import Calculator from '../datalists/calculator.svelte';
 
 	const ctx = getExpenseFormContext();
@@ -38,7 +38,7 @@
 			{#if isLoading}
 				<Skeleton class="h-9 w-full" />
 			{:else if isSuccess}
-				<div class="group grid grid-cols-[1fr_auto] items-center gap-2 p-2">
+				<div class="group grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-2">
 					{#each data as { user }}
 						{@const payerIndex = $formData.payers.findIndex((p) => p.userId === user.id)}
 						{@const payerAmount =
@@ -60,7 +60,7 @@
 						<Input
 							id={`paid-amt-${user.id}`}
 							type="text"
-							placeholder="0"
+							placeholder={(0).toFixed(ctx.currency.digits)}
 							value={payerAmount}
 							oninput={(e) => {
 								const value = e.currentTarget.value;
@@ -89,10 +89,10 @@
 								});
 							}}
 							variant="underlined"
-							class="field-sizing-content min-w-9 text-center"
+							class="field-sizing-content max-w-30 min-w-9 text-center"
 							autocomplete="off"
 							inputmode="numeric"
-							onfocus={(e) => e.currentTarget.select()}
+							data-scroll-into-view="true"
 						/>
 					{/each}
 				</div>
