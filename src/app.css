@@ -138,6 +138,12 @@
   }
 }
 
+@media (display-mode: window-controls-overlay) {
+  body {
+    padding-top: env(titlebar-area-height, 40px);
+  }
+}
+
 input::-webkit-calendar-picker-indicator {
   display: none !important;
 }
