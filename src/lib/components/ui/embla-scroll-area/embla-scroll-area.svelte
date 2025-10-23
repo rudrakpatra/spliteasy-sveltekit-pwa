@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import emblaCarouselSvelte from 'embla-carousel-svelte';
 	import type { EmblaOptionsType } from 'embla-carousel';
+	import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures';
 
 	interface Props {
 		children: Snippet;
@@ -25,7 +26,7 @@
 
 <div
 	class="embla {className || ''}"
-	use:emblaCarouselSvelte={{ options: defaultOptions, plugins: [] }}
+	use:emblaCarouselSvelte={{ options: defaultOptions, plugins: [WheelGesturesPlugin()] }}
 >
 	<div
 		class="embla__container {containerClass || ''}"

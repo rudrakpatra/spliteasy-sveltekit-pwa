@@ -26,7 +26,6 @@ export const insertGroupSchema = groupsSelectSchema.extend({
     id: true,
     createdAt: true,
     updatedAt: true,
-    updatedBy: true,
 });
 
 export const updateGroupSchema = groupsSelectSchema.omit({
@@ -34,7 +33,6 @@ export const updateGroupSchema = groupsSelectSchema.omit({
     id: true,
     createdAt: true,
     updatedAt: true,
-    updatedBy: true,
 });
 
 export const groupRouter = t.router({

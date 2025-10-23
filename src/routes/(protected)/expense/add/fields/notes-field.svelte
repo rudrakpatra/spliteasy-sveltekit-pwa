@@ -1,0 +1,20 @@
+<script lang="ts">
+	import { getExpenseFormContext } from '../context.svelte';
+	import * as Form from '$lib/components/ui/form';
+	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
+
+	const ctx = getExpenseFormContext();
+	const { form } = ctx;
+	const { form: formData } = form;
+</script>
+
+<Form.Field {form} name="notes">
+	<Form.Control>
+		{#snippet children({ props })}
+			<Form.Label>Notes</Form.Label>
+			<Textarea {...props} bind:value={$formData.notes} placeholder="Add any additional notes..." />
+		{/snippet}
+	</Form.Control>
+	<Form.Description>Notes for this expense</Form.Description>
+	<Form.FieldErrors />
+</Form.Field>

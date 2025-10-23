@@ -1,9 +1,11 @@
 <script lang="ts" module>
 	export let enableVirtualKeyboardOverlayContent = (feedback: (message: string) => void) => {
 		if ('virtualKeyboard' in navigator) {
-			feedback('VirtualKeyboard API supported');
+			// feedback('VirtualKeyboard API supported');
 			(navigator.virtualKeyboard as any).overlaysContent = true;
-			feedback('navigator.virtualKeyboard.overlaysContent=true');
+			feedback(
+				`navigator.virtualKeyboard.overlaysContent=${(navigator.virtualKeyboard as any).overlaysContent}`
+			);
 			return true;
 		}
 		feedback('VirtualKeyboard API not supported');

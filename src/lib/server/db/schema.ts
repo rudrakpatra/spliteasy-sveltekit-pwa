@@ -18,7 +18,6 @@ import { numberStringSchema, type NumberString } from '$lib/shared/schema/math';
 import type { Category } from '$lib/shared/category/category';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { currencyCodeSchema } from '$lib/shared/currency/currency';
-import z from 'zod';
 
 // UsersTable
 export const users = pgTable('users', {

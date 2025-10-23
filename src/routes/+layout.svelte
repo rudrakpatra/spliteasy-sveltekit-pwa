@@ -4,10 +4,8 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	import { browser, dev } from '$app/environment';
+	import { browser } from '$app/environment';
 	import { enableVirtualKeyboardOverlayContent } from '$lib/components/ui/view/keyboard-aware-view.svelte';
-	import { toast } from 'svelte-sonner';
-
 	let { children } = $props();
 	// Create query client
 	const queryClient = new QueryClient({
@@ -18,11 +16,8 @@
 			}
 		}
 	});
-	$effect(() => {
-		dev
-			? enableVirtualKeyboardOverlayContent(toast.info)
-			: enableVirtualKeyboardOverlayContent(console.log);
-	});
+
+	enableVirtualKeyboardOverlayContent(console.log);
 </script>
 
 <svelte:head>

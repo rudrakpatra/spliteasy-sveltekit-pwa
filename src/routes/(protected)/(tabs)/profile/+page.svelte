@@ -19,7 +19,7 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-2xl px-4 py-8">
-	<div class="bg-card rounded-lg border p-6 shadow-sm">
+	<div class="rounded-lg border bg-card p-6 shadow-sm">
 		<h1 class="mb-6 text-2xl font-bold">Profile</h1>
 
 		<div class="space-y-6">
@@ -63,7 +63,7 @@
 
 			<div class="border-t pt-4">
 				<h3 class="mb-2 text-lg font-medium">Account Information</h3>
-				<div class="text-muted-foreground space-y-1 text-sm">
+				<div class="space-y-1 text-sm text-muted-foreground">
 					<p>• Signed in with Google OAuth</p>
 					<p>• Account created through SplitEasy</p>
 					<p>• Profile managed securely</p>
@@ -72,7 +72,7 @@
 
 			<div class="border-t pt-4">
 				<h3 class="mb-2 text-lg font-medium">Currency Suggestions</h3>
-				<div class="text-muted-foreground space-y-1 text-sm">
+				<div class="space-y-1 text-sm text-muted-foreground">
 					{#if $currencySuggestions.isLoading}
 						<p>Loading...</p>
 					{:else if $currencySuggestions.data}
@@ -82,6 +82,17 @@
 					{:else}
 						<p>No currency suggestions available.</p>
 					{/if}
+				</div>
+			</div>
+
+			<div class="border-t pt-4">
+				<h3 class="mb-2 text-lg font-medium">Virtual Keyboard</h3>
+				<div class="space-y-1 text-sm text-muted-foreground">
+					<p>
+						{(navigator as any).virtualKeyboard?.overlaysContent
+							? 'overlaysContent'
+							: 'does not overlaysContent'}
+					</p>
 				</div>
 			</div>
 		</div>
