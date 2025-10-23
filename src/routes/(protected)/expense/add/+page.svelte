@@ -10,18 +10,16 @@
 	import { type Uuid } from '$lib/shared/schema/uuid';
 	import { generateId, setExpenseFormContext } from './context.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { useCurrencySuggestions } from '$lib/hooks/use-currency-suggestions';
 	import ExpenseForm from './expense-form.svelte';
 	import GroupChangeDialog from './group-change-dialog.svelte';
 	import ContextViewer from './context-viewer.svelte';
+	import { evaluate } from '$lib/shared/schema/math';
 
 	let { data }: { data: PageData } = $props();
 
 	// Setup tRPC
 	const api = trpc(page, data.queryClient);
 	const utils = api.createUtils();
-
-	const currencySuggestions = useCurrencySuggestions();
 
 	// Setup mutation
 	const createExpense = api.expense.insert.createMutation({
@@ -38,7 +36,7 @@
 	const form = superForm(defaults(zod4(createExpenseSchema)), {
 		SPA: true,
 		dataType: 'json',
-		validators: zod4(createExpenseSchema),
+		// validators: zod4(createExpenseSchema),
 		resetForm: false,
 		onUpdate({ form }) {
 			if (form.valid) {
@@ -149,6 +147,16 @@
 		get submitting() {
 			return $createExpense.isPending;
 		},
+		payers: {
+			get total() {
+				//if any payer amount is NaN return NaN
+				const total = $formData.payers.reduce(
+					(total, payer) => total + (payer.amountExpression ? evaluate(payer.amountExpression) : 0),
+					0
+				);
+				return isNaN(total) ? NaN : total;
+			}
+		},
 		group: {
 			get current() {
 				return $formData.groupId;
@@ -169,6 +177,12 @@
 			onRemove: removeReceipt
 		},
 		items: {
+			get total() {
+				return $formData.items.reduce(
+					(total, item) => total + (item.amountExpression ? evaluate(item.amountExpression) : 0),
+					0
+				);
+			},
 			selected: itemsSelected
 		},
 		splits: {

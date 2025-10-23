@@ -17,6 +17,7 @@
 	import NotesField from './fields/notes-field.svelte';
 	import CategoryField from './fields/category-field.svelte';
 	import * as DataList from '$lib/components/ui/data-list';
+	import { useActiveElement } from '$lib/hooks/use-active-element.svelte';
 
 	const ctx = getExpenseFormContext();
 	const { form } = ctx;
@@ -24,10 +25,15 @@
 
 	// Access mutation status from form
 	const isSubmitting = $derived(ctx.submitting);
+	const activeElement = useActiveElement();
+	$effect(() => {
+		//scroll activeElement to view with padding
+		activeElement.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	});
 </script>
 
 <DataList.Root>
-	<Card.Root class="border-0">
+	<Card.Root class="border-0 shadow-none">
 		<Card.Header>
 			<Card.Title>Create New Expense</Card.Title>
 			<Card.Description>Create a new expense to split with friends</Card.Description>

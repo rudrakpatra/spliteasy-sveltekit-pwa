@@ -39,7 +39,17 @@
 			{@const success = $currencySuggestions.isSuccess}
 
 			{#snippet trigger()}
-				<Button {...props} variant="outline" type="button">
+				<Button
+					onclick={(e) => {
+						e.preventDefault();
+						if (!$currencySuggestions.isSuccess) {
+							currencyDrawerOpen = true;
+						}
+					}}
+					{...props}
+					variant="outline"
+					type="button"
+				>
 					{#if currency}
 						{currencyLabel(currency)}
 					{:else}
@@ -54,7 +64,9 @@
 			{#if success}
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
-						{@render trigger()}
+						{#snippet children()}
+							{@render trigger()}
+						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="start">
 						{#each $currencySuggestions.data as curr (curr.code)}

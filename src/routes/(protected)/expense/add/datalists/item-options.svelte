@@ -17,13 +17,6 @@
 	const { form } = ctx;
 	const { form: formData } = form;
 
-	// Helper function for clean updates
-	function updateFormData(updater: (snapshot: typeof $formData) => void) {
-		const snapshot = $state.snapshot($formData);
-		updater(snapshot);
-		formData.set(snapshot);
-	}
-
 	const membersQuery = $derived(
 		api.group.getMembers.createQuery(
 			{ groupId: $formData.groupId },
@@ -53,18 +46,15 @@
 			onClick: (e: Event) => {
 				e.preventDefault();
 				e.stopPropagation();
-				updateFormData((snapshot) => {
-					// Filter out selected items
-					snapshot.items = snapshot.items.filter((i) => !ctx.items.selected.has(i.id));
-
-					// Also remove these items from any splits and clean up empty splits
-					snapshot.splits = snapshot.splits
-						.map((split) => ({
-							...split,
-							itemIds: split.itemIds.filter((itemId) => !ctx.items.selected.has(itemId))
-						}))
-						.filter((split) => split.itemIds.length > 0);
+				formData.update((current) => {
+					// Filter out selected items and return a NEW object
+					const filtered = current.items.filter((i) => !ctx.items.selected.has(i.id));
 					ctx.items.selected.clear();
+
+					return {
+						...current,
+						items: filtered // New array reference
+					};
 				});
 			}
 		},
@@ -83,16 +73,17 @@
 				e.preventDefault();
 				e.stopPropagation();
 
-				updateFormData((snapshot) => {
-					snapshot.splits.push({
+				formData.update((current) => {
+					current.splits.push({
 						id: generateId(),
 						itemIds: Array.from(ctx.items.selected.values()),
 						shares:
 							members?.map((m) => ({
 								userId: m.userId,
-								shareExpression: '0'
+								shareExpression: ''
 							})) || []
 					});
+					return current;
 				});
 				ctx.items.selected.clear();
 			}
@@ -110,6 +101,8 @@
 				{@const Icon = key.icon}
 				{#if key.show}
 					<Button
+						type="button"
+						tabindex={3}
 						class="rounded-full active:bg-accent active:text-accent-foreground"
 						onpointerdown={key.onDown}
 						onclick={key.onClick}

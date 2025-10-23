@@ -74,9 +74,9 @@
 		// Only vibrate and focus on actual changes, not on mount
 		if (prevChecked !== checked) {
 			navigator.vibrate?.(VIBRATE_DURATION);
-			checkboxRef?.focus();
 			prevChecked = checked;
 			onCheckedChange?.(checked);
+			checkboxRef?.focus();
 		}
 	});
 </script>
@@ -95,10 +95,7 @@
 		{id}
 		bind:ref={checkboxRef}
 		data-slot="checkbox"
-		class={cn(
-			'relative z-10 cursor-pointer touch-none text-muted-foreground outline-none select-none',
-			className
-		)}
+		class={cn('relative z-10 cursor-pointer touch-none text-muted-foreground', className)}
 		bind:checked
 		onclick={handleClick}
 		{...restProps}

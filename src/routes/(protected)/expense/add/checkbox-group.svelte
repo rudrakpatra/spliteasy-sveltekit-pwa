@@ -36,7 +36,6 @@
 	let isDragging = $state(false);
 	let dragState = $state<boolean | null>(null);
 	let isMultiSelectActive = $state(false);
-
 	let checkboxRegistry = new Map<
 		string,
 		{

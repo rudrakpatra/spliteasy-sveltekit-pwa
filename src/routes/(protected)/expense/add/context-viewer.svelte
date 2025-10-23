@@ -26,8 +26,8 @@
 
 <!-- Debug JSON -->
 <pre>
-	formData:
-	{JSON.stringify($formData, null, 2)}
+	ctx:
+	{JSON.stringify(ctx, null, 2)}
 	____
 	membersQueryData:
 	{JSON.stringify($membersQuery.data, null, 2)}

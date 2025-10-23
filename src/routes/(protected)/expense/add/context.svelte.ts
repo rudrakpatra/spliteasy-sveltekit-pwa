@@ -1,4 +1,3 @@
-// lib/components/expense/context.svelte.ts
 import { getContext, setContext } from 'svelte';
 import type { SuperForm } from 'sveltekit-superforms';
 import type { createExpenseSchema } from '$lib/shared/schema/expense';
@@ -18,7 +17,11 @@ type ExpenseFormContext = {
         onChange: (event: Event) => void;
         onRemove: () => void;
     };
+    payers: {
+        total: number;
+    }
     items: {
+        total: number
         selected: SvelteSet<string>;
     };
     splits: {
@@ -27,7 +30,7 @@ type ExpenseFormContext = {
     submitting: boolean;
 };
 
-const KEY = Symbol('EXPENSE_FORM');
+const KEY = Symbol('EXPENSE_ADD_FORM');
 
 export function setExpenseFormContext(ctx: ExpenseFormContext) {
     return setContext(KEY, ctx);
