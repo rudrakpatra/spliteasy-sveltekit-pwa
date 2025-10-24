@@ -12,7 +12,6 @@
 	import type { UserId } from '$lib/shared/schema/user';
 	import Calculator from '../datalists/calculator.svelte';
 	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
-	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import EmblaScrollArea from '$lib/components/ui/embla-scroll-area/embla-scroll-area.svelte';
 
 	const ctx = getExpenseFormContext();
@@ -158,23 +157,25 @@
 										oninput={(e) => {
 											handleShareChange(split.id, user.id, e.currentTarget.value);
 										}}
-										onfocus={(e) => {
-											// special focus handling
-											e.preventDefault();
-											e.stopPropagation();
-											if (e.currentTarget.value === '') {
-												e.currentTarget.value = '1';
-												handleShareChange(split.id, user.id, '1');
-												e.currentTarget.blur();
-											} else {
-												e.currentTarget.select();
-												e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										onpointerdown={(e) => {
+											if (shareValue === '') {
+												e.preventDefault();
 											}
 										}}
+										onclick={(e) => {
+											if (shareValue === '') {
+												handleShareChange(split.id, user.id, '1');
+												e.preventDefault();
+												e.stopPropagation();
+												//prevent focus from happening
+											}
+										}}
+										onfocus={(e) => e.currentTarget.select()}
+										data-scroll-into-view={shareValue ? 'true' : 'false'}
+										inputmode={shareValue ? 'numeric' : 'none'}
 										variant="underlined"
 										class="field-sizing-content min-w-9 text-center"
 										autocomplete="off"
-										inputmode="numeric"
 									/>
 								{/each}
 							</div>

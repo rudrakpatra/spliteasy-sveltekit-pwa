@@ -38,7 +38,9 @@
 			{#if isLoading}
 				<Skeleton class="h-9 w-full" />
 			{:else if isSuccess}
-				<div class="group grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-2">
+				<section
+					class="group grid grid-cols-[1fr_auto] items-center gap-2 rounded-md px-3 py-2 outline outline-border"
+				>
 					{#each data as { user }}
 						{@const payerIndex = $formData.payers.findIndex((p) => p.userId === user.id)}
 						{@const payerAmount =
@@ -95,7 +97,7 @@
 							data-scroll-into-view="true"
 						/>
 					{/each}
-				</div>
+				</section>
 			{/if}
 		{/snippet}
 	</Form.Control>
