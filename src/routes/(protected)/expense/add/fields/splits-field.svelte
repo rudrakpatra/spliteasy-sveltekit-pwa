@@ -31,35 +31,26 @@
 		)
 	);
 
-	$effect.pre(() => {
-		const currentSplits = $formData.splits;
-		const hasEmptySplits = currentSplits.some((split) => split.itemIds.length === 0);
-
-		if (hasEmptySplits) {
-			formData.update((current) => ({
-				...current,
-				splits: current.splits.filter((split) => split.itemIds.length > 0)
-			}));
-		}
-	});
-
 	$effect(() => {
 		//check if the items exists
-		const items = untrack(() => $formData.items);
+		const untracked_items = untrack(() => $formData.items);
+		const untracked_splits = untrack(() => $formData.splits);
 		//for each split delete item id that doesn't exist in items and delete the split if all items are deleted
 		formData.update((current) => {
 			return {
 				...current,
-				splits: current.splits
+				splits: untracked_splits
 					.map((split) => {
-						const newSplits = split.itemIds.filter((id) => items.some((item) => item.id === id));
-						console.log(newSplits);
-						if (newSplits.length === 0) {
+						const newSplit = split.itemIds.filter((id) =>
+							untracked_items.some((item) => item.id === id)
+						);
+
+						if (newSplit.length === 0) {
 							return null;
 						}
 						return {
 							...split,
-							itemIds: newSplits
+							itemIds: newSplit
 						};
 					})
 					.filter((split) => split !== null)
@@ -166,7 +157,7 @@
 										shareIndex >= 0 ? split.shares[shareIndex].shareExpression : ''}
 
 									<label class="flex items-center gap-2" for={`split-${split.id}-share-${user.id}`}>
-										<Avatar.Root class="size-9 flex-shrink-0">
+										<Avatar.Root class="size-9 shrink-0">
 											<Avatar.Image src={user.img} alt={user.name} />
 											<Avatar.Fallback>
 												{user.name.slice(0, 1).toUpperCase()}

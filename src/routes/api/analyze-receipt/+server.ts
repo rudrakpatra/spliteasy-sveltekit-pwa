@@ -25,7 +25,6 @@ const receiptAnalysisSchema = z.object({
 });
 
 export const POST: RequestHandler = async ({ request }) => {
-    console.log('Receipt analysis request received');
     try {
         const { imageUrl, prompt } = await request.json();
 
@@ -38,7 +37,7 @@ export const POST: RequestHandler = async ({ request }) => {
                     content: [
                         {
                             type: 'text',
-                            text: prompt || 'Analyze this receipt and extract expense details including items and amounts. For currency, use INR for Indian receipts.'
+                            text: prompt || 'Analyze this receipt and extract expense details including items and amounts'
                         },
                         {
                             type: 'image',

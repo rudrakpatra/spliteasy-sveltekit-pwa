@@ -10,6 +10,7 @@
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { toast } from 'svelte-sonner';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 
 	const ctx = getExpenseFormContext();
 	const { form, receipt, ai } = ctx;
@@ -39,65 +40,78 @@
 	<Form.Control>
 		{#snippet children({ props })}
 			<Form.Label>Ask AI</Form.Label>
+			<div
+				class="group focus-within:bottom-[env(keyboard-inset-height, 0px)] space-y-2 focus-within:fixed focus-within:inset-0 focus-within:z-50 focus-within:m-0 focus-within:grid focus-within:grid-rows-[auto_1fr_auto] focus-within:bg-background focus-within:p-2"
+			>
+				<div class="hidden group-focus-within:block">
+					<section class="flex items-center gap-2">
+						<ArrowLeft /> Back
+					</section>
+				</div>
+				<InputGroup.Root class="min-h-[50vh] group-focus-within:min-h-0">
+					{#if receipt.blobUrl}
+						<InputGroup.Addon align="block-start">
+							<img
+								class="aspect-auto w-full rounded-md group-focus-within:max-h-32 group-focus-within:w-auto"
+								src={receipt.blobUrl}
+								alt="Receipt"
+							/>
+						</InputGroup.Addon>
+						<InputGroup.Textarea
+							value={inputValue}
+							oninput={(e) => (inputValue = e.currentTarget.value)}
+							placeholder="Analyze this receipt & extract all items with amounts."
+							data-scroll-into-view="true"
+						/>
+					{:else}
+						<InputGroup.Textarea
+							value={inputValue}
+							oninput={(e) => (inputValue = e.currentTarget.value)}
+							placeholder="Describe your expense. You can scan or upload a receipt if you have one."
+							data-scroll-into-view="true"
+						/>
+					{/if}
 
-			<InputGroup.Root>
-				{#if receipt.blobUrl}
-					<InputGroup.Addon align="block-start">
-						<img class="aspect-auto w-full rounded-lg" src={receipt.blobUrl} alt="Receipt" />
+					<InputGroup.Addon align="block-end">
+						<InputGroup.Button
+							class="ml-auto"
+							onclick={handleAnalyze}
+							disabled={ai.isAnalyzing || !receipt.blobUrl}
+							size="sm"
+							variant="default"
+						>
+							{#if ai.isAnalyzing}
+								<Spinner /> Loading...
+							{:else}
+								<Send2 /> Analyze
+							{/if}
+						</InputGroup.Button>
 					</InputGroup.Addon>
-					<InputGroup.Textarea
-						value={inputValue}
-						oninput={(e) => (inputValue = e.currentTarget.value)}
-						placeholder="Analyze this receipt & extract all items with amounts."
-						data-scroll-into-view="true"
-					/>
-				{:else}
-					<InputGroup.Textarea
-						class="min-h-[50vh]"
-						oninput={(e) => (inputValue = e.currentTarget.value)}
-						placeholder="Describe your expense. You can scan or upload a receipt if you have one."
-						data-scroll-into-view="true"
-					/>
-				{/if}
+				</InputGroup.Root>
 
-				<InputGroup.Addon align="block-end">
-					<InputGroup.Button
-						class="ml-auto"
-						onclick={handleAnalyze}
-						disabled={ai.isAnalyzing || !receipt.blobUrl}
-						size="sm"
-						variant="default"
-					>
-						{#if ai.isAnalyzing}
-							<Spinner /> Loading...
-						{:else}
-							<Send2 /> Analyze
-						{/if}
-					</InputGroup.Button>
-				</InputGroup.Addon>
-			</InputGroup.Root>
-			{#if receipt.blobUrl}
-				<div class="grid grid-cols-[1fr_1fr_auto] gap-2">
-					<Button onclick={openScan} variant="outline" type="button">
-						<Scan /> Scan
-					</Button>
-					<Button onclick={openUpload} variant="outline" type="button">
-						<Upload /> Upload
-					</Button>
-					<Button variant="outline" type="button" onclick={receipt.onRemove}>
-						<Trash />
-					</Button>
-				</div>
-			{:else}
-				<div class="grid grid-cols-[1fr_1fr] gap-2">
-					<Button onclick={openScan} variant="outline" type="button">
-						<Scan /> Scan
-					</Button>
-					<Button onclick={openUpload} variant="outline" type="button">
-						<Upload /> Upload
-					</Button>
-				</div>
-			{/if}
+				{#if receipt.blobUrl}
+					<div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+						<Button onclick={openScan} variant="outline" type="button">
+							<Scan /> Scan
+						</Button>
+						<Button onclick={openUpload} variant="outline" type="button">
+							<Upload /> Upload
+						</Button>
+						<Button variant="outline" type="button" onclick={receipt.onRemove}>
+							<Trash />
+						</Button>
+					</div>
+				{:else}
+					<div class="grid grid-cols-[1fr_1fr] gap-2">
+						<Button onclick={openScan} variant="outline" type="button">
+							<Scan /> Scan
+						</Button>
+						<Button onclick={openUpload} variant="outline" type="button">
+							<Upload /> Upload
+						</Button>
+					</div>
+				{/if}
+			</div>
 		{/snippet}
 	</Form.Control>
 	<Form.Description>Analyze receipts and split the expense</Form.Description>

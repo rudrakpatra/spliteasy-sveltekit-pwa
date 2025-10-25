@@ -83,7 +83,7 @@
 
 <div
 	bind:this={containerElement}
-	class="relative grid h-full flex-shrink-0 place-content-center"
+	class="relative grid h-full place-content-center"
 	onpointerdown={handlePointerDown}
 	onpointerup={handlePointerUp}
 	onpointercancel={handlePointerUp}

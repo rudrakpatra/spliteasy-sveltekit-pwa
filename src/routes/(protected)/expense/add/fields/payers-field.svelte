@@ -50,7 +50,7 @@
 							class="flex flex-1 items-center gap-2 whitespace-nowrap"
 							for={`paid-amt-${user.id}`}
 						>
-							<Avatar.Root class="flex size-9 flex-shrink-0 items-center">
+							<Avatar.Root class="flex size-9 shrink-0 items-center">
 								<Avatar.Image src={user.img} alt={user.name} />
 								<Avatar.Fallback>
 									{user.name.slice(0, 1).toUpperCase()}

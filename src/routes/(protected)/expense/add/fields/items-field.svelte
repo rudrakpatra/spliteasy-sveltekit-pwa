@@ -13,6 +13,7 @@
 	import { uuidSchema } from '$lib/shared/schema/uuid';
 	import ItemOptions from '../datalists/item-options.svelte';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 
 	const ctx = getExpenseFormContext();
 	const { form, ai } = ctx;
@@ -45,8 +46,8 @@
 	});
 
 	// Auto-add empty item row - use immutable updates
-	$effect.pre(() => {
-		if (filled === total || total === 0) {
+	$effect(() => {
+		if (untrack(() => filled === total || total === 0)) {
 			formData.update((current) => {
 				return {
 					...current,
