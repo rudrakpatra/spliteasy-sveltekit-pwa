@@ -47,7 +47,7 @@
 
 	// Auto-add empty item row - use immutable updates
 	$effect(() => {
-		if (untrack(() => filled === total || total === 0)) {
+		if (filled === total || total === 0) {
 			formData.update((current) => {
 				return {
 					...current,

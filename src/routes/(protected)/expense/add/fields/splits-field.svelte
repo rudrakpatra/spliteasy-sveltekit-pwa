@@ -204,17 +204,16 @@
 						</section>
 					{/each}
 				</div>
-
-				<Form.Description>
-					{#if $formData.splits.length > 0}
-						{$formData.splits.length} Total splits
-					{:else}
-						Select items and split them by shares
-					{/if}
-				</Form.Description>
 			{:else if error}
 				<div class="text-destructive">Error loading members</div>
 			{/if}
+			<Form.Description>
+				{#if $formData.splits.length > 0}
+					{$formData.splits.length} Total splits
+				{:else}
+					Select items and split them by shares
+				{/if}
+			</Form.Description>
 		{/snippet}
 	</Form.Control>
 	<Form.FieldErrors />
