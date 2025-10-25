@@ -29,6 +29,9 @@
 	ctx:
 	{JSON.stringify(ctx, null, 2)}
 	____
+	aiPendingFields:
+	{JSON.stringify(ctx.ai.aiPendingFields, null, 2)}
+	____
 	membersQueryData:
 	{JSON.stringify($membersQuery.data, null, 2)}
 	____

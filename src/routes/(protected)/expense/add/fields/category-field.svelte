@@ -7,9 +7,10 @@
 	import CategoryDrawer from '../drawers/category-drawer.svelte';
 	import { useCategorySuggestion } from '$lib/hooks/use-category-suggestion';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { cn } from '$lib/utils';
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
+	const { form, ai } = ctx;
 	const { form: formData } = form;
 
 	let categoryDrawerOpen = $state(false);
@@ -23,6 +24,7 @@
 				...current,
 				category: $autoCategory.data
 			}));
+			ai.markFieldAsTouched('category');
 		}
 	});
 </script>
@@ -33,23 +35,25 @@
 			<Form.Label>Category</Form.Label>
 			{#snippet trigger()}
 				{@const category = Object.values(categories).find((c) => c.code === $formData.category)}
-				<Button
-					{...props}
-					variant="outline"
-					type="button"
-					onclick={() => {
-						categoryDrawerOpen = true;
-					}}
-				>
-					{#if category}
-						<span class="text-xl">{category.icon}</span>{category.name}
-					{:else if $autoCategory.isLoading}
-						<Spinner />Detecting...
-					{:else}
-						Select Category
-					{/if}
-					<ChevronDown />
-				</Button>
+				<div class={cn('w-fit', ai.aiPendingFields.has('currency') && 'ai-pending')}>
+					<Button
+						{...props}
+						variant="outline"
+						type="button"
+						onclick={() => {
+							categoryDrawerOpen = true;
+						}}
+					>
+						{#if category}
+							<span class="text-xl">{category.icon}</span>{category.name}
+						{:else if $autoCategory.isLoading}
+							<Spinner />Detecting...
+						{:else}
+							Select Category
+						{/if}
+						<ChevronDown />
+					</Button>
+				</div>
 			{/snippet}
 			{@render trigger()}
 		{/snippet}

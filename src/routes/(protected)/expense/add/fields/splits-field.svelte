@@ -13,6 +13,7 @@
 	import Calculator from '../datalists/calculator.svelte';
 	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
 	import EmblaScrollArea from '$lib/components/ui/embla-scroll-area/embla-scroll-area.svelte';
+	import { untrack } from 'svelte';
 
 	const ctx = getExpenseFormContext();
 	const { form } = ctx;
@@ -40,6 +41,30 @@
 				splits: current.splits.filter((split) => split.itemIds.length > 0)
 			}));
 		}
+	});
+
+	$effect(() => {
+		//check if the items exists
+		const items = untrack(() => $formData.items);
+		//for each split delete item id that doesn't exist in items and delete the split if all items are deleted
+		formData.update((current) => {
+			return {
+				...current,
+				splits: current.splits
+					.map((split) => {
+						const newSplits = split.itemIds.filter((id) => items.some((item) => item.id === id));
+						console.log(newSplits);
+						if (newSplits.length === 0) {
+							return null;
+						}
+						return {
+							...split,
+							itemIds: newSplits
+						};
+					})
+					.filter((split) => split !== null)
+			};
+		});
 	});
 
 	const handleShareChange = (splitId: string, userId: UserId, value: string) => {

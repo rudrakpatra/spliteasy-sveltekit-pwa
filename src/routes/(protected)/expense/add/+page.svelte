@@ -15,6 +15,9 @@
 	import ContextViewer from './context-viewer.svelte';
 	import { evaluate } from '$lib/shared/schema/math';
 	import { CURRENCY_MAP } from '$lib/shared/currency/currency-codes';
+	import { ReceiptAnalyzer } from './receipt-analyzer.svelte';
+	import { upload } from '@vercel/blob/client';
+	import type { PutBlobResult } from '@vercel/blob';
 
 	let { data }: { data: PageData } = $props();
 
@@ -37,7 +40,7 @@
 	const form = superForm(defaults(zod4(createExpenseSchema)), {
 		SPA: true,
 		dataType: 'json',
-		validators: false, //zod4(createExpenseSchema),
+		validators: false,
 		resetForm: false,
 		onUpdate({ form }) {
 			if (form.valid) {
@@ -52,8 +55,12 @@
 	let receiptBlobUrl = $state<string | undefined>(undefined);
 	let receiptFile = $state<File | null>(null);
 	let isUploadingReceipt = $state(false);
+	let uploadedBlob = $state<PutBlobResult | null>(null);
 
-	function handleReceiptChange(event: Event) {
+	// AI Analyzer instance
+	const aiAnalyzer = new ReceiptAnalyzer(form);
+
+	async function handleReceiptChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
 
@@ -69,12 +76,29 @@
 			return;
 		}
 
+		// Clean up previous blob URL
 		if (receiptBlobUrl) {
 			URL.revokeObjectURL(receiptBlobUrl);
 		}
 
 		receiptFile = file;
 		receiptBlobUrl = URL.createObjectURL(file);
+
+		// Optional: Auto-upload to Vercel Blob
+		// try {
+		//     isUploadingReceipt = true;
+		//     const blob = await upload(file.name, file, {
+		//         access: 'public',
+		//         handleUploadUrl: '/api/upload/receipt',
+		//     });
+		//     uploadedBlob = blob;
+		//     toast.success('Receipt uploaded successfully');
+		// } catch (error) {
+		//     toast.error('Failed to upload receipt');
+		//     console.error(error);
+		// } finally {
+		//     isUploadingReceipt = false;
+		// }
 	}
 
 	function removeReceipt() {
@@ -83,6 +107,10 @@
 		}
 		receiptBlobUrl = undefined;
 		receiptFile = null;
+		uploadedBlob = null;
+
+		// Cancel any ongoing AI analysis
+		aiAnalyzer.cancel();
 	}
 
 	// Selection state
@@ -176,6 +204,9 @@
 			get blobUrl() {
 				return receiptBlobUrl;
 			},
+			get uploadedUrl() {
+				return uploadedBlob?.url;
+			},
 			get file() {
 				return receiptFile;
 			},
@@ -196,7 +227,8 @@
 		},
 		splits: {
 			selected: splitsSelected
-		}
+		},
+		ai: aiAnalyzer // Add AI analyzer to context
 	});
 </script>
 

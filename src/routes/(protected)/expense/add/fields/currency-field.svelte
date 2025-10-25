@@ -12,13 +12,18 @@
 	import Check from '@tabler/icons-svelte/icons/check';
 	import CurrencyDrawer from '../drawers/currency-drawer.svelte';
 	import { untrack } from 'svelte';
+	import { cn } from '$lib/utils';
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
+	const { form, ai } = ctx;
 	const { form: formData } = form;
 
 	const currencySuggestions = useCurrencySuggestions();
 	let currencyDrawerOpen = $state(false);
+
+	$effect(() => {
+		$formData.currency && ai.markFieldAsTouched('currency');
+	});
 
 	// Auto-set currency
 	$effect(() => {
@@ -39,24 +44,26 @@
 			{@const success = $currencySuggestions.isSuccess}
 
 			{#snippet trigger()}
-				<Button
-					onclick={(e) => {
-						e.preventDefault();
-						if (!$currencySuggestions.isSuccess) {
-							currencyDrawerOpen = true;
-						}
-					}}
-					{...props}
-					variant="outline"
-					type="button"
-				>
-					{#if currency}
-						{currencyLabel(currency)}
-					{:else}
-						{#if $currencySuggestions.isLoading}<Spinner />{/if} Select a currency
-					{/if}
-					<ChevronDown />
-				</Button>
+				<div class={cn('w-fit', ai.aiPendingFields.has('currency') && 'ai-pending')}>
+					<Button
+						onclick={(e) => {
+							e.preventDefault();
+							if (!$currencySuggestions.isSuccess) {
+								currencyDrawerOpen = true;
+							}
+						}}
+						{...props}
+						variant="outline"
+						type="button"
+					>
+						{#if currency}
+							{currencyLabel(currency)}
+						{:else}
+							{#if $currencySuggestions.isLoading}<Spinner />{/if} Select a currency
+						{/if}
+						<ChevronDown />
+					</Button>
+				</div>
 			{/snippet}
 
 			<Form.Label>Currency</Form.Label>

@@ -1,0 +1,31 @@
+@keyframes slide {
+    0% {
+        background-position: 0%;
+    }
+
+    100% {
+        background-position: 200%;
+    }
+}
+
+.ai-pending {
+    position: relative;
+    z-index: 0;
+}
+
+.ai-pending::before {
+    content: '';
+    position: absolute;
+    --border-width: 2px;
+    inset: calc(-1 * var(--border-width));
+    animation: slide 1.5s linear infinite;
+    background: linear-gradient(to right, transparent, var(--color-primary), transparent);
+    background-size: 200%;
+    border-radius: var(--radius);
+    z-index: -1;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    padding: var(--border-width);
+}

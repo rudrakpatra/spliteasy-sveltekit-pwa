@@ -3,6 +3,7 @@ import type { SuperForm } from 'sveltekit-superforms';
 import type { createExpenseSchema } from '$lib/shared/schema/expense';
 import type z from 'zod';
 import type { SvelteSet } from 'svelte/reactivity';
+import type { ReceiptAnalyzer } from './receipt-analyzer.svelte';
 
 type ExpenseFormContext = {
     form: SuperForm<z.infer<typeof createExpenseSchema>>;
@@ -15,7 +16,8 @@ type ExpenseFormContext = {
         readonly digits: number;
     };
     receipt: {
-        readonly blobUrl: string | undefined;
+        readonly blobUrl: string | undefined; // Local preview
+        readonly uploadedUrl: string | undefined; // Vercel Blob URL
         readonly file: File | null;
         readonly isUploading: boolean;
         onChange: (event: Event) => void;
@@ -31,6 +33,7 @@ type ExpenseFormContext = {
     splits: {
         selected: SvelteSet<string>;
     };
+    ai: ReceiptAnalyzer;
     submitting: boolean;
 };
 

@@ -12,9 +12,10 @@
 	import { trpc } from '$lib/trpc/client';
 	import { uuidSchema } from '$lib/shared/schema/uuid';
 	import ItemOptions from '../datalists/item-options.svelte';
+	import { cn } from '$lib/utils';
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
+	const { form, ai } = ctx;
 	const { form: formData } = form;
 
 	const api = trpc(page);
@@ -72,7 +73,6 @@
 	// Deselect when focused on something outside of the items
 	$effect(() => {
 		if (activeElement.current?.id) {
-			console.log(activeElement.current.id);
 			if (
 				!(
 					activeElement.current.id.startsWith(`item-select-${id}-`) ||
@@ -98,79 +98,82 @@
 			{#if isLoading}
 				<Skeleton class="h-9 w-full" />
 			{:else if isSuccess}
-				<CheckboxGroup groupId="items-group">
-					<section
-						class="grid grid-cols-[auto_auto_1fr] items-center gap-2 overflow-x-auto rounded-md px-3 py-2 outline outline-border"
-					>
-						{#each $formData.items as item (item.id)}
-							{@const idx = $formData.items.findIndex((i) => i.id === item.id)}
-							{@const hasSplit = $formData.splits.some((s) => s.itemIds.includes(item.id))}
-							<div>
-								{#if hasSplit}
-									<LockSquareRoundedFilled
-										onclick={(e) => {
-											e.preventDefault();
-											// Remove item from split - use immutable update
-											formData.update((current) => {
-												return {
-													...current,
-													splits: current.splits.map((split) => ({
-														...split,
-														itemIds: split.itemIds.filter((id) => id !== item.id)
-													}))
-												};
-											});
-										}}
-									/>
-								{:else}
-									<CheckboxButton
-										id={`item-select-${id}-${item.id}`}
-										tabindex={2}
-										checked={ctx.items.selected.has(item.id)}
-										onCheckedChange={(checked) => {
-											if (checked) {
-												ctx.items.selected.add(item.id);
-											} else {
-												ctx.items.selected.delete(item.id);
-											}
-										}}
-									/>
-								{/if}
-							</div>
+				<div class={cn(ai.aiPendingFields.has('items') && 'ai-pending')}>
+					<CheckboxGroup groupId="items-group">
+						<section
+							class="grid grid-cols-[auto_auto_1fr] items-center gap-2 overflow-x-auto rounded-md px-3 py-2 outline outline-border"
+						>
+							{#each $formData.items as item (item.id)}
+								{@const idx = $formData.items.findIndex((i) => i.id === item.id)}
+								{@const hasSplit = $formData.splits.some((s) => s.itemIds.includes(item.id))}
+								<div>
+									{#if hasSplit}
+										<LockSquareRoundedFilled
+											onclick={(e) => {
+												e.preventDefault();
+												// Remove item from split - use immutable update
+												formData.update((current) => {
+													return {
+														...current,
+														splits: current.splits.map((split) => ({
+															...split,
+															itemIds: split.itemIds.filter((id) => id !== item.id)
+														}))
+													};
+												});
+											}}
+										/>
+									{:else}
+										<CheckboxButton
+											id={`item-select-${id}-${item.id}`}
+											tabindex={2}
+											checked={ctx.items.selected.has(item.id)}
+											onCheckedChange={(checked) => {
+												if (checked) {
+													ctx.items.selected.add(item.id);
+												} else {
+													ctx.items.selected.delete(item.id);
+												}
+											}}
+										/>
+									{/if}
+								</div>
 
-							<div>
-								<Input
-									id={`item-name-${id}-${item.id}`}
-									type="text"
-									bind:value={$formData.items[idx].name}
-									placeholder={`#${item.id}`}
-									variant="underlined"
-									class="field-sizing-content max-w-30 min-w-9 truncate text-left"
-									autocomplete="off"
-									inputmode="text"
-									data-scroll-into-view="true"
-									tabindex={3}
-								/>
-							</div>
+								<div>
+									<Input
+										id={`item-name-${id}-${item.id}`}
+										type="text"
+										oninput={() => ai.markFieldAsTouched('items')}
+										bind:value={$formData.items[idx].name}
+										placeholder={`#${item.id}`}
+										variant="underlined"
+										class="field-sizing-content max-w-30 min-w-9 truncate text-left"
+										autocomplete="off"
+										inputmode="text"
+										data-scroll-into-view="true"
+										tabindex={3}
+									/>
+								</div>
 
-							<label class="grid grid-cols-[1fr_auto]">
-								<span></span>
-								<Input
-									id={`item-amt-${id}-${item.id}`}
-									type="text"
-									placeholder={remaining}
-									variant="underlined"
-									class="field-sizing-content max-w-30 min-w-9 truncate text-center"
-									autocomplete="off"
-									inputmode="numeric"
-									data-scroll-into-view="true"
-									bind:value={$formData.items[idx].amountExpression}
-									tabindex={4}
-								/>
-							</label>
-						{/each}
-					</section>
-				</CheckboxGroup>
+								<label class="grid grid-cols-[1fr_auto]">
+									<span></span>
+									<Input
+										id={`item-amt-${id}-${item.id}`}
+										type="text"
+										placeholder={remaining}
+										variant="underlined"
+										class="field-sizing-content max-w-30 min-w-9 truncate text-center"
+										autocomplete="off"
+										inputmode="numeric"
+										data-scroll-into-view="true"
+										bind:value={$formData.items[idx].amountExpression}
+										tabindex={4}
+									/>
+								</label>
+							{/each}
+						</section>
+					</CheckboxGroup>
+				</div>
 			{:else if error}
 				<div class="text-center text-destructive">Error loading members</div>
 			{/if}
