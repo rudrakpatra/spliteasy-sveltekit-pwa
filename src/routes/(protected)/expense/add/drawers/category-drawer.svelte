@@ -9,8 +9,6 @@
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
-	const { form: formData } = form;
 </script>
 
 <Drawer.Root bind:open repositionInputs={false}>
@@ -40,7 +38,7 @@
 								value={category.code}
 								keywords={[category.code, category.name]}
 								onSelect={() => {
-									$formData.category = category.code;
+									ctx.categoryCode.set(category.code);
 									open = false;
 								}}
 							>

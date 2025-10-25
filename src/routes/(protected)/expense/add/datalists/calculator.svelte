@@ -9,34 +9,11 @@
 	import BracketOpen from '$lib/components/icons/bracket-open.svelte';
 	import BracketClose from '$lib/components/icons/bracket-close.svelte';
 	import Parentheses from '@tabler/icons-svelte/icons/parentheses';
-	import Sum from '@tabler/icons-svelte/icons/sum';
 	import { VIBRATE_DURATION } from '$lib/constants';
 	import { EmblaScrollArea } from '$lib/components/ui/embla-scroll-area';
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import { trpc } from '$lib/trpc/client';
-	import { page } from '$app/state';
-	import { getExpenseFormContext } from '../context.svelte';
-	import { evaluate } from '$lib/shared/schema/math';
 	import { Button } from '$lib/components/ui/button';
-
-	const api = trpc(page);
-
-	const ctx = getExpenseFormContext();
-	const { form } = ctx;
-	const { form: formData } = form;
-
-	// Generate unique IDs
-	function generateId() {
-		return crypto.randomUUID().slice(0, 6);
-	}
-
-	// Helper function for clean updates
-	function updateFormData(updater: (snapshot: typeof $formData) => void) {
-		const snapshot = $state.snapshot($formData);
-		updater(snapshot);
-		formData.set(snapshot);
-	}
 
 	let { open = $bindable(false), id }: { open: boolean; id: string } = $props();
 
@@ -130,7 +107,7 @@
 			id: 'parentheses',
 			icon: Parentheses,
 			get label() {
-				return 'Wrap in Parentheses';
+				return 'wrap';
 			},
 			get show() {
 				return hasSelection;
@@ -195,7 +172,7 @@
 <KeyboardAwareView>
 	<DataList.Portal bind:open id={`calculator-${id}`}>
 		<!-- backdrop -->
-		<div class="absolute top-0 h-full w-full border-t-1 border-border bg-background py-1"></div>
+		<div class="absolute top-0 h-full w-full border-t border-border bg-background py-1"></div>
 		<!-- scroll area -->
 		<EmblaScrollArea class="h-full py-1" containerClass="flex items-center gap-2 px-2">
 			{#each keys as key (key.id)}

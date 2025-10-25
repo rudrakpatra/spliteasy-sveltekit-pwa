@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { getExpenseFormContext } from '../context.svelte';
-	import * as Form from '$lib/components/ui/form';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
+	import { Label } from '$lib/components/ui/label';
 	import { currencies, type CurrencyCode } from '$lib/shared/currency/currency-codes';
 	import { currencyCodeSchema, currencyLabel } from '$lib/shared/currency/currency';
 	import { useCurrencySuggestions } from '$lib/hooks/use-currency-suggestions';
@@ -11,105 +11,91 @@
 	import ChevronRight from '@tabler/icons-svelte/icons/chevron-right';
 	import Check from '@tabler/icons-svelte/icons/check';
 	import CurrencyDrawer from '../drawers/currency-drawer.svelte';
-	import { untrack } from 'svelte';
 	import { cn } from '$lib/utils';
 
 	const ctx = getExpenseFormContext();
-	const { form, ai } = ctx;
-	const { form: formData } = form;
 
 	const currencySuggestions = useCurrencySuggestions();
 	let currencyDrawerOpen = $state(false);
 
-	$effect(() => {
-		$formData.currency && ai.markFieldAsTouched('currency');
-	});
-
 	// Auto-set currency
 	$effect(() => {
-		if ($currencySuggestions.isSuccess && $formData) {
-			const currentCurrency = untrack(() => $formData.currency);
-			const parsed = currencyCodeSchema.safeParse($currencySuggestions.data[0].code);
-			if (!currentCurrency && parsed.success) {
-				$formData.currency = parsed.data;
-			}
+		if (
+			!ctx.currency.current &&
+			$currencySuggestions.isSuccess &&
+			currencyCodeSchema.safeParse($currencySuggestions.data[0].code).success
+		) {
+			ctx.currency.set($currencySuggestions.data[0].code);
 		}
 	});
+
+	const currency = $derived(currencies.find((c) => c.code === ctx.currency.current));
 </script>
 
-<Form.Field {form} name="currency">
-	<Form.Control>
-		{#snippet children({ props })}
-			{@const currency = currencies.find((c) => c.code === $formData.currency)}
-			{@const success = $currencySuggestions.isSuccess}
+<div class="space-y-2">
+	{#snippet trigger()}
+		<div class={cn('w-fit', ctx.ai.pendingFields.has('currencyCode') && 'ai-pending')}>
+			<Button
+				onclick={(e) => {
+					e.preventDefault();
+					if (!$currencySuggestions.isSuccess) {
+						currencyDrawerOpen = true;
+					}
+				}}
+				variant="outline"
+				type="button"
+			>
+				{#if currency}
+					{currencyLabel(currency)}
+				{:else}
+					{#if $currencySuggestions.isLoading}<Spinner />{/if} Select a currency
+				{/if}
+				<ChevronDown />
+			</Button>
+		</div>
+	{/snippet}
 
-			{#snippet trigger()}
-				<div class={cn('w-fit', ai.aiPendingFields.has('currency') && 'ai-pending')}>
-					<Button
-						onclick={(e) => {
-							e.preventDefault();
-							if (!$currencySuggestions.isSuccess) {
-								currencyDrawerOpen = true;
-							}
+	<Label>Currency</Label>
+
+	{#if $currencySuggestions.isSuccess}
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet children()}
+					{@render trigger()}
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="start">
+				{#each $currencySuggestions.data as curr (curr.code)}
+					<DropdownMenu.Item
+						onSelect={() => {
+							ctx.currency.set(curr.code as CurrencyCode);
 						}}
-						{...props}
-						variant="outline"
-						type="button"
+						class="flex items-center justify-between"
 					>
-						{#if currency}
-							{currencyLabel(currency)}
-						{:else}
-							{#if $currencySuggestions.isLoading}<Spinner />{/if} Select a currency
+						<span>{curr.currency}</span>
+						{#if ctx.currency.current === curr.code}
+							<Check />
 						{/if}
-						<ChevronDown />
-					</Button>
-				</div>
-			{/snippet}
+					</DropdownMenu.Item>
+				{/each}
 
-			<Form.Label>Currency</Form.Label>
+				<DropdownMenu.Separator />
 
-			{#if success}
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet children()}
-							{@render trigger()}
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="start">
-						{#each $currencySuggestions.data as curr (curr.code)}
-							<DropdownMenu.Item
-								onSelect={() => {
-									$formData.currency = curr.code as CurrencyCode;
-								}}
-								class="flex items-center justify-between"
-							>
-								<span>{curr.currency}</span>
-								{#if $formData.currency === curr.code}
-									<Check />
-								{/if}
-							</DropdownMenu.Item>
-						{/each}
-
-						<DropdownMenu.Separator />
-
-						<DropdownMenu.Item
-							onSelect={() => {
-								currencyDrawerOpen = true;
-							}}
-							class="flex items-center justify-between"
-						>
-							<span>Show all currencies</span>
-							<ChevronRight />
-						</DropdownMenu.Item>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			{:else}
-				{@render trigger()}
-			{/if}
-		{/snippet}
-	</Form.Control>
-	<Form.Description>Choose a currency for this expense</Form.Description>
-	<Form.FieldErrors />
-</Form.Field>
+				<DropdownMenu.Item
+					onSelect={() => {
+						currencyDrawerOpen = true;
+					}}
+					class="flex items-center justify-between"
+				>
+					<span>Show all currencies</span>
+					<ChevronRight />
+				</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	{:else}
+		{@render trigger()}
+	{/if}
+	<p class="text-xs text-muted-foreground">Choose a currency for this expense</p>
+</div>
 
 <CurrencyDrawer bind:open={currencyDrawerOpen} />

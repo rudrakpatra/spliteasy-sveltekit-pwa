@@ -7,7 +7,7 @@
 	import Plus from '@tabler/icons-svelte/icons/plus';
 
 	// import fields
-	import ReceiptField from './fields/receipt-field.svelte';
+	import ReceiptField from './fields/ask-ai-field.svelte';
 	import ExpenseNameField from './fields/expense-name-field.svelte';
 	import CurrencyField from './fields/currency-field.svelte';
 	import GroupField from './fields/groups-field.svelte';
@@ -18,12 +18,12 @@
 	import CategoryField from './fields/category-field.svelte';
 	import * as DataList from '$lib/components/ui/data-list';
 	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
-	import KeyboardAwareView from '$lib/components/ui/view/keyboard-aware-view.svelte';
 	import { useIME } from '$lib/hooks/use-ime.svelte';
+	import ContextViewer from './context-viewer.svelte';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
-	const { enhance } = form;
 
 	// Access mutation status from form
 	const isSubmitting = $derived(ctx.submitting);
@@ -41,46 +41,66 @@
 			}
 		}
 	});
+
+	let step = $state(1);
 </script>
 
 <DataList.Root>
-	<Card.Root class="mx-auto max-w-2xl border-0 shadow-none">
+	<Card.Root class="mx-auto min-h-dvh max-w-2xl border-0 shadow-none">
 		<Card.Header>
 			<Card.Title>Create New Expense</Card.Title>
 			<Card.Description>Create a new expense to split with friends</Card.Description>
 		</Card.Header>
+		<Card.Content class="flex-1 space-y-4">
+			<!-- {#if step == 1} -->
+			<ReceiptField />
+			<ExpenseNameField />
+			<CurrencyField />
+			<GroupField />
+			<!-- {:else if step == 2} -->
+			<PayersField />
+			<ItemsField />
+			<SplitsField />
+			<!-- {:else if step == 3} -->
+			<NotesField />
+			<CategoryField />
+			<!-- {/if} -->
+		</Card.Content>
 
-		<form use:enhance>
-			<Card.Content class="space-y-6">
-				<ReceiptField />
-				<ExpenseNameField />
-				<CurrencyField />
-				<GroupField />
-				<PayersField />
-				<ItemsField />
-				<SplitsField />
-				<NotesField />
-				<CategoryField />
-			</Card.Content>
-
-			<Card.Footer class="flex justify-between">
-				<Button
-					type="button"
-					variant="outline"
-					onclick={() => goto('/dashboard')}
-					disabled={isSubmitting}
-				>
-					Cancel
+		<Card.Footer class="flex justify-between">
+			<!-- {#if step == 1} -->
+			<Button
+				type="button"
+				variant="outline"
+				onclick={() => goto('/dashboard')}
+				disabled={isSubmitting}
+			>
+				Cancel
+			</Button>
+			<!-- {:else}
+				<Button type="button" variant="outline" onclick={() => step--}>
+					<ArrowLeft /> Back
 				</Button>
+			{/if} -->
 
-				<Button type="submit" disabled={isSubmitting}>
-					{#if isSubmitting}
-						<Spinner /> Creating...
-					{:else}
-						<Plus /> Create Expense
-					{/if}
+			<!-- {#if step == 1}
+				<Button type="button" onclick={() => step++} disabled={isSubmitting}>
+					<ArrowRight /> Next
 				</Button>
-			</Card.Footer>
-		</form>
+			{:else if step == 2}
+				<Button type="button" onclick={() => step++} disabled={isSubmitting}>
+					<ArrowRight /> Next
+				</Button>
+			{:else if step == 3} -->
+			<Button type="submit" disabled={isSubmitting}>
+				{#if isSubmitting}
+					<Spinner /> Creating...
+				{:else}
+					<Plus /> Create Expense
+				{/if}
+			</Button>
+			<!-- {/if} -->
+		</Card.Footer>
 	</Card.Root>
 </DataList.Root>
+<!-- <ContextViewer /> -->

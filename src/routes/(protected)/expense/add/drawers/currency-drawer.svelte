@@ -9,8 +9,6 @@
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
-	const { form: formData } = form;
 </script>
 
 <Drawer.Root bind:open repositionInputs={false}>
@@ -39,7 +37,7 @@
 								value={currency.code}
 								keywords={[currency.code, currency.currency, ...currency.countries]}
 								onSelect={() => {
-									$formData.currency = currency.code;
+									ctx.currency.set(currency.code);
 									open = false;
 								}}
 								class="flex items-center justify-between gap-2 aria-selected:bg-transparent"

@@ -3,27 +3,24 @@
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { superForm, defaults } from 'sveltekit-superforms';
-	import { zod4 } from 'sveltekit-superforms/adapters';
-	import { createExpenseSchema, transformedCreateExpenseSchema } from '$lib/shared/schema/expense';
 	import { toast } from 'svelte-sonner';
-	import { type Uuid } from '$lib/shared/schema/uuid';
-	import { generateId, setExpenseFormContext } from './context.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import * as CTX from './context.svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import ExpenseForm from './expense-form.svelte';
 	import GroupChangeDialog from './group-change-dialog.svelte';
-	import ContextViewer from './context-viewer.svelte';
-	import { evaluate } from '$lib/shared/schema/math';
-	import { CURRENCY_MAP } from '$lib/shared/currency/currency-codes';
-	import { ReceiptAnalyzer } from './receipt-analyzer.svelte';
-	import { upload } from '@vercel/blob/client';
-	import type { PutBlobResult } from '@vercel/blob';
+	import { CURRENCY_MAP, type CurrencyCode } from '$lib/shared/currency/currency-codes';
+	import type { Uuid } from '$lib/shared/schema/uuid';
+	import type { UserId } from '$lib/shared/schema/user';
+	import { categorySchema, type CategoryCode } from '$lib/shared/category/category';
+	import { currencyCodeSchema } from '$lib/shared/currency/currency';
 
 	let { data }: { data: PageData } = $props();
 
 	// Setup tRPC
 	const api = trpc(page, data.queryClient);
 	const utils = api.createUtils();
+
+	const aiAnalyzeMutation = api.ai.analyze.createMutation();
 
 	// Setup mutation
 	const createExpense = api.expense.insert.createMutation({
@@ -36,100 +33,142 @@
 		}
 	});
 
-	// Setup Superforms
-	const form = superForm(defaults(zod4(createExpenseSchema)), {
-		SPA: true,
-		dataType: 'json',
-		validators: false,
-		resetForm: false,
-		onUpdate({ form }) {
-			if (form.valid) {
-				$createExpense.mutate(transformedCreateExpenseSchema.parse(form.data));
-			}
-		}
-	});
-
-	const { form: formData } = form;
-
-	// Receipt state
-	let receiptBlobUrl = $state<string | undefined>(undefined);
+	// AI/Receipt state
+	let aiPendingFields = $state<SvelteSet<CTX.AnalyzeDataKey>>(new SvelteSet());
 	let receiptFile = $state<File | null>(null);
-	let isUploadingReceipt = $state(false);
-	let uploadedBlob = $state<PutBlobResult | null>(null);
+	let receiptBlobUrl = $state<string | undefined>(undefined);
+	let receiptPrompt = $state('');
 
-	// AI Analyzer instance
-	const aiAnalyzer = new ReceiptAnalyzer(form);
+	// Form state
+	let formName = $state('');
+	let formNotes = $state('');
+	let formCategoryCode = $state<CategoryCode>('OTHER');
+	let formCurrency = $state<CurrencyCode | undefined>(undefined);
+	let formGroupId = $state<Uuid | undefined>(undefined);
 
-	async function handleReceiptChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const file = target.files?.[0];
-
-		if (!file) return;
-
-		if (!file.type.startsWith('image/')) {
-			toast.error('Please select an image file');
-			return;
-		}
-
-		if (file.size > 5 * 1024 * 1024) {
-			toast.error('Image must be less than 5MB');
-			return;
-		}
-
-		// Clean up previous blob URL
-		if (receiptBlobUrl) {
-			URL.revokeObjectURL(receiptBlobUrl);
-		}
-
-		receiptFile = file;
-		receiptBlobUrl = URL.createObjectURL(file);
-
-		// Optional: Auto-upload to Vercel Blob
-		// try {
-		//     isUploadingReceipt = true;
-		//     const blob = await upload(file.name, file, {
-		//         access: 'public',
-		//         handleUploadUrl: '/api/upload/receipt',
-		//     });
-		//     uploadedBlob = blob;
-		//     toast.success('Receipt uploaded successfully');
-		// } catch (error) {
-		//     toast.error('Failed to upload receipt');
-		//     console.error(error);
-		// } finally {
-		//     isUploadingReceipt = false;
-		// }
-	}
-
-	function removeReceipt() {
-		if (receiptBlobUrl) {
-			URL.revokeObjectURL(receiptBlobUrl);
-		}
-		receiptBlobUrl = undefined;
-		receiptFile = null;
-		uploadedBlob = null;
-
-		// Cancel any ongoing AI analysis
-		aiAnalyzer.cancel();
-	}
-
-	// Selection state
-	const itemsSelected = new SvelteSet<Uuid>();
-	const splitsSelected = new SvelteSet<Uuid>();
-
-	// Group change confirmation
+	// Group state
 	let showGroupChangeDialog = $state(false);
-	let pendingGroupId = $state<string | undefined>(undefined);
+	let pendingGroupId = $state<Uuid | undefined>(undefined);
 
-	function handleGroupChange(newGroupId: string) {
+	// Collections
+	const payers = $state(new SvelteMap<UserId, CTX.Payer>());
+	const items = $state(new SvelteMap<CTX.ItemId, CTX.Item>());
+	const splits = $state(new SvelteMap<CTX.SplitId, CTX.Split>());
+
+	function setReceiptFile(file: File | null) {
+		if (receiptBlobUrl) {
+			URL.revokeObjectURL(receiptBlobUrl);
+		}
+		receiptFile = file;
+		receiptBlobUrl = file ? URL.createObjectURL(file) : undefined;
+	}
+
+	async function analyzeReceipt() {
+		if (!receiptBlobUrl) return;
+
+		try {
+			const response = await fetch(receiptBlobUrl);
+			const blob = await response.blob();
+			const reader = new FileReader();
+
+			reader.onloadend = () => {
+				$aiAnalyzeMutation.mutate(
+					{
+						imageUrl: reader.result as string,
+						prompt: receiptPrompt
+					},
+					{
+						onSuccess: (result) => {
+							// Apply AI updates
+
+							// Name
+							if (result.data.name && aiPendingFields.has('name')) formName = result.data.name;
+
+							// Currency
+							if (
+								currencyCodeSchema.safeParse(result.data.currencyCode).success &&
+								aiPendingFields.has('currencyCode')
+							)
+								formCurrency = result.data.currencyCode;
+
+							// Category
+							if (
+								result.data.categoryCode &&
+								categorySchema.safeParse(result.data.categoryCode).success &&
+								aiPendingFields.has('categoryCode')
+							)
+								formCategoryCode = result.data.categoryCode;
+
+							// Notes
+							if (result.data.notes && aiPendingFields.has('notes')) formNotes = result.data.notes;
+
+							// Items
+							if (result.data.items?.length > 0 && aiPendingFields.has('items')) {
+								items.clear();
+								for (const item of result.data.items) {
+									const itemId = CTX.generateItemId();
+									items.set(itemId, {
+										name: item.name,
+										amount: item.amount,
+										selected: false
+									});
+								}
+							}
+
+							// Splits
+							if (result.data.splits?.length > 0 && aiPendingFields.has('splits')) {
+								splits.clear();
+								// for (const split of result.data.splits) {
+								// 	const splitId = CTX.generateSplitId();
+								// 	splits.set(splitId, {
+								// 		itemIds: new SvelteSet(split.itemNames.map((name) => CTX.generateItemId())),
+								// 		shares: new SvelteMap(split.shares.map((share) => [share.userId, share.amount]))
+								// 	});
+								// }
+							}
+
+							aiPendingFields.clear();
+							toast.success('Receipt analyzed successfully');
+						},
+						onError: (error) => {
+							toast.error('Failed to analyze receipt', {
+								description: error.message
+							});
+							cancelAnalysis();
+						}
+					}
+				);
+			};
+
+			// set all aiPendingFields
+			aiPendingFields.add('name');
+			aiPendingFields.add('currencyCode');
+			aiPendingFields.add('categoryCode');
+			aiPendingFields.add('notes');
+			aiPendingFields.add('items');
+
+			reader.readAsDataURL(blob);
+		} catch (error) {
+			toast.error('Failed to read receipt file');
+			cancelAnalysis();
+		}
+	}
+
+	function cancelAnalysis() {
+		aiPendingFields.clear();
+		$aiAnalyzeMutation.reset();
+	}
+
+	function handleGroupChange(newGroupId: Uuid) {
 		// Early return if selecting the same group
-		if ($formData.groupId === newGroupId) {
+		if (formGroupId === newGroupId) {
 			return;
 		}
-		const hasData =
-			$formData.payers.length > 0 || itemsSelected.size > 0 || splitsSelected.size > 0;
-		// switch with confirmation dialog
-		if (hasData && $formData.groupId) {
+
+		const hasData = payers.size > 0 || items.size > 0 || splits.size > 0;
+
+		// Switch with confirmation dialog
+		if (hasData && formGroupId) {
 			pendingGroupId = newGroupId;
 			showGroupChangeDialog = true;
 		} else {
@@ -137,29 +176,17 @@
 		}
 	}
 
-	function applyGroupChange(newGroupId: string) {
-		const itemId = generateId();
-		formData.update((current) => ({
-			...current,
-			groupId: newGroupId,
-			payers: [],
-			items: [
-				{
-					id: itemId,
-					name: '',
-					amountExpression: ''
-				}
-			],
-			splits: [
-				{
-					id: generateId(),
-					itemIds: [itemId],
-					shares: []
-				}
-			]
-		}));
-		itemsSelected.clear();
-		splitsSelected.clear();
+	function applyGroupChange(newGroupId: Uuid) {
+		formGroupId = newGroupId;
+
+		// Clear all data
+		payers.clear();
+		items.clear();
+		splits.clear();
+
+		// Reset form
+		formName = '';
+		formNotes = '';
 
 		showGroupChangeDialog = false;
 		pendingGroupId = undefined;
@@ -171,64 +198,88 @@
 	}
 
 	// Set context
-	setExpenseFormContext({
-		form,
-		get submitting() {
-			return $createExpense.isPending;
+	CTX.setExpenseFormContext({
+		ai: {
+			file: {
+				get current() {
+					return receiptFile && receiptBlobUrl
+						? { file: receiptFile, blobUrl: receiptBlobUrl }
+						: null;
+				},
+				set: setReceiptFile
+			},
+			prompt: {
+				get current() {
+					return receiptPrompt;
+				},
+				set: (value: string) => {
+					receiptPrompt = value;
+				}
+			},
+			get pendingFields() {
+				return aiPendingFields;
+			},
+			get isAnalyzing() {
+				return $aiAnalyzeMutation.isPending;
+			},
+			analyze: analyzeReceipt,
+			cancel: cancelAnalysis
+		},
+		name: {
+			get current() {
+				return formName;
+			},
+			set: (value: string) => {
+				aiPendingFields.delete('name');
+				formName = value;
+			}
 		},
 		currency: {
 			get current() {
-				return $formData.currency;
+				return formCurrency;
 			},
 			get digits() {
-				return CURRENCY_MAP.get($formData.currency)?.digits ?? 2;
+				return formCurrency ? (CURRENCY_MAP.get(formCurrency)?.digits ?? 2) : 2;
+			},
+			set: (value: CurrencyCode | undefined) => {
+				aiPendingFields.delete('currencyCode');
+				formCurrency = value;
 			}
 		},
-		payers: {
-			get total() {
-				//if any payer amount is NaN return NaN
-				const total = $formData.payers.reduce(
-					(total, payer) => total + (payer.amountExpression ? evaluate(payer.amountExpression) : 0),
-					0
-				);
-				return isNaN(total) ? NaN : total;
-			}
-		},
-		group: {
+		groupId: {
 			get current() {
-				return $formData.groupId;
+				return formGroupId ?? ('' as Uuid);
 			},
-			onChange: handleGroupChange
+			set: handleGroupChange
 		},
-		receipt: {
-			get blobUrl() {
-				return receiptBlobUrl;
+		payers,
+		items,
+		splits,
+		notes: {
+			get current() {
+				return formNotes;
 			},
-			get uploadedUrl() {
-				return uploadedBlob?.url;
-			},
-			get file() {
-				return receiptFile;
-			},
-			get isUploading() {
-				return isUploadingReceipt;
-			},
-			onChange: handleReceiptChange,
-			onRemove: removeReceipt
+			set: (value: string) => {
+				aiPendingFields.delete('notes');
+				formNotes = value;
+			}
 		},
-		items: {
-			get total() {
-				return $formData.items.reduce(
-					(total, item) => total + (item.amountExpression ? evaluate(item.amountExpression) : 0),
-					0
-				);
+		categoryCode: {
+			get current() {
+				return formCategoryCode;
 			},
-			selected: itemsSelected
+			set: (value: CategoryCode) => {
+				aiPendingFields.delete('categoryCode');
+				formCategoryCode = value;
+			}
 		},
-		splits: {
-			selected: splitsSelected
-		},
-		ai: aiAnalyzer // Add AI analyzer to context
+		get submitting() {
+			return $createExpense.isPending;
+		}
+	});
+
+	$effect(() => {
+		items && aiPendingFields.delete('items');
 	});
 </script>
 
@@ -243,4 +294,3 @@
 	onConfirm={() => applyGroupChange(pendingGroupId!)}
 	onCancel={cancelGroupChange}
 />
-<!-- <ContextViewer /> -->

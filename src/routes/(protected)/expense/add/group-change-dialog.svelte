@@ -18,7 +18,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Change group?</Dialog.Title>
 			<Dialog.Description>
-				Changing groups will clear all payers, items, and splits. This action cannot be undone.
+				Changing groups will clear all payers and splits. This action cannot be undone.
 			</Dialog.Description>
 		</Dialog.Header>
 		<Dialog.Footer class="flex flex-row justify-center">

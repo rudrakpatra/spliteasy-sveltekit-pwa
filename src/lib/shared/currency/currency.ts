@@ -99,8 +99,8 @@ export async function getCurrencySuggestions(): Promise<Currency[]> {
 
     return Array.from(suggestions.values());
 }
-
-export const currencyCodeSchema = z.enum(Object.values(currencies).map((currency) => currency.code));
+const currencyCodes = Object.values(currencies).map((currency) => currency.code) as [CurrencyCode, ...CurrencyCode[]];
+export const currencyCodeSchema = z.enum(currencyCodes);
 
 export const currencySymbol = (currency: Currency) => {
     const locale = navigator.language;

@@ -5,29 +5,27 @@
 	import ArrowsSplit from '@tabler/icons-svelte/icons/arrows-split';
 	import { VIBRATE_DURATION } from '$lib/constants';
 	import { EmblaScrollArea } from '$lib/components/ui/embla-scroll-area';
-	import { generateId, getExpenseFormContext } from '../context.svelte';
+	import { generateSplitId, getExpenseFormContext, type ItemId } from '../context.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
 	import { uuidSchema } from '$lib/shared/schema/uuid';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import type { UserId } from '$lib/shared/schema/user';
 
 	const api = trpc(page);
 
 	const ctx = getExpenseFormContext();
-	const { form } = ctx;
-	const { form: formData } = form;
 
 	const membersQuery = $derived(
 		api.group.getMembers.createQuery(
-			{ groupId: $formData.groupId },
+			{ groupId: ctx.groupId.current },
 			{
 				refetchInterval: Infinity,
-				enabled: uuidSchema.safeParse($formData.groupId).success
+				enabled: uuidSchema.safeParse(ctx.groupId.current).success
 			}
 		)
 	);
-
-	const members = $derived($membersQuery.data);
 
 	let { open = $bindable(false), id }: { open: boolean; id: string } = $props();
 
@@ -35,7 +33,7 @@
 		{
 			icon: Trash,
 			get show() {
-				return ctx.items.selected.size > 0;
+				return Array.from(ctx.items).some(([id, item]) => item.selected);
 			},
 			label: 'Delete',
 			onDown: (e: Event) => {
@@ -46,23 +44,16 @@
 			onClick: (e: Event) => {
 				e.preventDefault();
 				e.stopPropagation();
-				formData.update((current) => {
-					// Filter out selected items and return a NEW object
-					const filtered = current.items.filter((i) => !ctx.items.selected.has(i.id));
-					ctx.items.selected.clear();
-
-					return {
-						...current,
-						items: filtered // New array reference
-					};
+				Array.from(ctx.items).forEach(([id, item]) => {
+					if (item.selected) ctx.items.delete(id);
 				});
 			}
 		},
 		{
 			icon: ArrowsSplit,
-			label: 'Split',
+			label: 'Split Equally',
 			get show() {
-				return ctx.items.selected.size > 0;
+				return Array.from(ctx.items).some(([id, item]) => item.selected);
 			},
 			onDown: (e: Event) => {
 				e.preventDefault();
@@ -73,19 +64,59 @@
 				e.preventDefault();
 				e.stopPropagation();
 
-				formData.update((current) => {
-					current.splits.push({
-						id: generateId(),
-						itemIds: Array.from(ctx.items.selected.values()),
-						shares:
-							members?.map((m) => ({
-								userId: m.userId,
-								shareExpression: ''
-							})) || []
-					});
-					return current;
+				const selectedItems = new SvelteSet<ItemId>();
+				Array.from(ctx.items).forEach(([id, item]) => {
+					if (item.selected) selectedItems.add(id);
 				});
-				ctx.items.selected.clear();
+
+				const shares = new SvelteMap<UserId, string>();
+				$membersQuery.data?.forEach((member) => {
+					shares.set(member.userId, '1');
+				});
+
+				ctx.splits.set(generateSplitId(), {
+					itemIds: selectedItems,
+					shares: shares
+				});
+
+				Array.from(ctx.items).forEach(([id, item]) => {
+					ctx.items.set(id, {
+						...item,
+						selected: false
+					});
+				});
+			}
+		},
+		{
+			icon: ArrowsSplit,
+			label: 'Split by Shares',
+			get show() {
+				return Array.from(ctx.items).some(([id, item]) => item.selected);
+			},
+			onDown: (e: Event) => {
+				e.preventDefault();
+				e.stopPropagation();
+				navigator.vibrate(VIBRATE_DURATION);
+			},
+			onClick: (e: Event) => {
+				e.preventDefault();
+				e.stopPropagation();
+
+				const selectedItems = new SvelteSet<ItemId>();
+				Array.from(ctx.items).forEach(([id, item]) => {
+					if (item.selected) selectedItems.add(id);
+				});
+
+				ctx.splits.set(generateSplitId(), {
+					itemIds: selectedItems,
+					shares: new SvelteMap()
+				});
+				Array.from(ctx.items).forEach(([id, item]) => {
+					ctx.items.set(id, {
+						...item,
+						selected: false
+					});
+				});
 			}
 		}
 	];
@@ -94,7 +125,7 @@
 <KeyboardAwareView>
 	<DataList.Portal bind:open id={`items-${id}`}>
 		<!-- backdrop -->
-		<div class="absolute top-0 h-full w-full border-t-1 border-border bg-background py-1"></div>
+		<div class="absolute top-0 h-full w-full border-t border-border bg-background py-1"></div>
 		<!-- scroll area -->
 		<EmblaScrollArea class="h-full py-1" containerClass="flex items-center gap-2 px-2">
 			{#each keys as key (key.label)}

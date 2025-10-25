@@ -19,7 +19,7 @@
 	let error = page.url.searchParams.get('error');
 </script>
 
-<div class="flex min-h-[100dvh] flex-col bg-background">
+<div class="flex min-h-dvh flex-col bg-background">
 	<!-- Main Content -->
 	<main class="container mx-auto grid flex-1 place-content-center space-y-4 p-4 text-center">
 		<div class="mx-auto max-w-xl min-w-xs space-y-8">

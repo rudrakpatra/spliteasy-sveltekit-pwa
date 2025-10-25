@@ -11,7 +11,6 @@
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
 	const ctx = getExpenseFormContext();
-	const { group } = ctx;
 	const api = trpc(page);
 
 	const groupsQuery = $derived(
@@ -45,7 +44,7 @@
 								value={grp.id}
 								keywords={[grp.name]}
 								onSelect={() => {
-									group.onChange(grp.id);
+									ctx.groupId.set(grp.id);
 									open = false;
 								}}
 								class="aria-selected:bg-transparent"

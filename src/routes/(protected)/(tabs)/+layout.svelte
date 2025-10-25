@@ -7,7 +7,7 @@
 	let { children } = $props();
 </script>
 
-<div class="flex min-h-[100dvh] flex-col bg-background">
+<div class="flex min-h-dvh flex-col bg-background">
 	<header class="border-b bg-card">
 		<div class="container mx-auto px-4">
 			<div class="flex h-16 items-center justify-between">

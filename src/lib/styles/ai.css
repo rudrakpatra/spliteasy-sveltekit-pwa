@@ -18,7 +18,7 @@
     position: absolute;
     --border-width: 2px;
     inset: calc(-1 * var(--border-width));
-    animation: slide 1.5s linear infinite;
+    animation: slide 1.5s linear infinite alternate;
     background: linear-gradient(to right, transparent, var(--color-primary), transparent);
     background-size: 200%;
     border-radius: var(--radius);

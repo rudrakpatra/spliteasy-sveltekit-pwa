@@ -1,20 +1,15 @@
 <script lang="ts">
-	import { getExpenseFormContext } from '../context.svelte';
-	import * as Form from '$lib/components/ui/form';
+	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import ChevronDown from '@tabler/icons-svelte/icons/chevron-down';
 	import GroupsDrawer from '../drawers/groups-drawer.svelte';
+	import { Spinner } from '$lib/components/ui/spinner';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import { getExpenseFormContext } from '../context.svelte';
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
-	import { Spinner } from '$lib/components/ui/spinner';
-	import { untrack } from 'svelte';
-	import { uuidSchema } from '$lib/shared/schema/uuid';
-	import * as Avatar from '$lib/components/ui/avatar';
-	import { toast } from 'svelte-sonner';
 
 	const ctx = getExpenseFormContext();
-	const { form, group } = ctx;
-	const { form: formData } = form;
 
 	const api = trpc(page);
 	let groupDrawerOpen = $state(false);
@@ -25,42 +20,33 @@
 
 	// Auto set the group
 	$effect(() => {
-		if ($groupsQuery.isSuccess && $formData) {
-			const currentGroupId = untrack(() => $formData.groupId);
-			if (!currentGroupId) {
-				const parsed = uuidSchema.safeParse($groupsQuery.data?.items[0].id);
-				if (parsed.success) {
-					ctx.group.onChange(parsed.data);
-				}
+		if ($groupsQuery.isSuccess) {
+			if (!ctx.groupId.current) {
+				ctx.groupId.set($groupsQuery.data?.items[0].id);
 			}
 		}
 	});
 
-	let selectedGroup = $derived($groupsQuery.data?.items.find((f) => f.id === group.current));
+	let group = $derived($groupsQuery.data?.items.find((f) => f.id === ctx.groupId.current));
 </script>
 
-<Form.Field {form} name="groupId">
-	<Form.Control>
-		{#snippet children({ props })}
-			{#snippet trigger()}
-				<Button {...props} onclick={() => (groupDrawerOpen = true)} variant="outline" type="button">
-					{#if selectedGroup}
-						<Avatar.Root class="size-6">
-							<Avatar.Image src={selectedGroup.img} />
-						</Avatar.Root>
-						{selectedGroup.name}
-					{:else}
-						{#if $groupsQuery.isLoading}<Spinner />{/if}Select Group
-					{/if}
-					<ChevronDown />
-				</Button>
-			{/snippet}
-			<Form.Label>Group</Form.Label>
-			{@render trigger()}
-		{/snippet}
-	</Form.Control>
-	<Form.Description>Choose a group to add this expense to</Form.Description>
-	<Form.FieldErrors />
-</Form.Field>
+<div class="space-y-2">
+	{#snippet trigger()}
+		<Button onclick={() => (groupDrawerOpen = true)} variant="outline" type="button">
+			{#if group}
+				<Avatar.Root class="size-6">
+					<Avatar.Image src={group.img} />
+				</Avatar.Root>
+				{group.name}
+			{:else}
+				{#if $groupsQuery.isLoading}<Spinner />{/if}Select Group
+			{/if}
+			<ChevronDown />
+		</Button>
+	{/snippet}
+	<Label>Group</Label>
+	{@render trigger()}
+	<p class="text-xs text-muted-foreground">Choose a group to add this expense to</p>
+</div>
 
 <GroupsDrawer bind:open={groupDrawerOpen} />

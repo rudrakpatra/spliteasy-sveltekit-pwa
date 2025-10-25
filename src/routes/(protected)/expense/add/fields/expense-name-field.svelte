@@ -1,31 +1,22 @@
 <script lang="ts">
 	import { getExpenseFormContext } from '../context.svelte';
-	import * as Form from '$lib/components/ui/form';
+	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { cn } from '$lib/utils';
-
 	const ctx = getExpenseFormContext();
-	const { form, ai } = ctx;
-	const { form: formData } = form;
 </script>
 
-<Form.Field {form} name="name">
-	<Form.Control>
-		{#snippet children({ props })}
-			<Form.Label>Expense Name</Form.Label>
-			<div class={cn(ai.aiPendingFields.has('name') && 'ai-pending')}>
-				<Input
-					{...props}
-					placeholder="Expense Name"
-					bind:value={$formData.name}
-					autocomplete="off"
-					data-scroll-into-view="true"
-					oninput={() => ai.markFieldAsTouched('name')}
-					class="w-full"
-				/>
-			</div>
-		{/snippet}
-	</Form.Control>
-	<Form.Description>Choose a name for your expense</Form.Description>
-	<Form.FieldErrors />
-</Form.Field>
+<div class="space-y-2">
+	<Label>Expense Name</Label>
+	<div class={cn(ctx.ai.pendingFields.has('name') && 'ai-pending')}>
+		<Input
+			placeholder="Expense Name"
+			autocomplete="off"
+			data-scroll-into-view="true"
+			value={ctx.name.current}
+			oninput={(e) => ctx.name.set(e.currentTarget.value)}
+			class="w-full"
+		/>
+	</div>
+	<p class="text-xs text-muted-foreground">Choose a name for your expense</p>
+</div>

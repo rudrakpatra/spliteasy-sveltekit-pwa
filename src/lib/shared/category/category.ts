@@ -94,6 +94,7 @@ export const categories = {
 } as const;
 
 export type Category = typeof categories[keyof typeof categories];
-
-export const categorySchema = z.enum(Object.values(categories).map((category) => category.code));
+export type CategoryCode = Category['code'];
+export const categoryCodes = Object.values(categories).map((category) => category.code) as [CategoryCode, ...CategoryCode[]];
+export const categorySchema = z.enum(categoryCodes);
 
