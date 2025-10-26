@@ -105,7 +105,7 @@
 									placeholder={'0'}
 									value={shareValue}
 									oninput={(e) => {
-										// ctx.splits.get(splitId)!.shares.set(user.id, e.currentTarget.value);
+										ctx.splits.get(splitId)!.shares.set(user.id, e.currentTarget.value);
 									}}
 									onpointerdown={(e) => {
 										if (shareValue === ' ' || !shareValue) {
