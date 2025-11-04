@@ -81,7 +81,7 @@
 					});
 				}}
 				variant="underlined"
-				class="field-sizing-content max-w-30 min-w-9 text-center"
+				class="field-sizing-content min-w-9 text-center"
 				autocomplete="off"
 				inputmode="numeric"
 				data-scroll-into-view="true"

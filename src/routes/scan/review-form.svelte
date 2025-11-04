@@ -34,23 +34,27 @@
 									{(participant.name || id).slice(0, 1).toUpperCase()}
 								</Avatar.Fallback>
 							</Avatar.Root>
-							<span class="flex-1 font-medium">{participant.name || '@' + id}</span>
+							{#if participant.name}
+								<span class="flex-1 font-medium">{participant.name}</span>
+							{:else}
+								<span class="flex-1 font-medium text-muted-foreground">@{id}</span>
+							{/if}
 							<div class="flex items-center gap-2">
 								<span class="text-xs text-muted-foreground">Owes {owes}</span>
 								<span class="text-xs text-muted-foreground">Paid {paid}</span>
 							</div>
 						</div>
-						<Label class="my-4 flex flex-wrap gap-2">
+						<Label class="my-4 flex  flex-wrap gap-2">
 							{#each ctx.splits as [splitId, split], i}
 								{@const total = Array.from(split.shares.values()).reduce((acc, curr) => {
 									return acc + (evaluateAmountExpression(curr) || 0);
 								}, 0)}
 								{#each split.shares as [userId, share] (userId)}
 									{@const own = evaluateAmountExpression(share) || 0}
-									{#if userId === id}
+									{#if userId === id && own}
 										<div class="whitespace-nowrap">
 											<Badge class="pr-1" type="button" variant="outline">
-												<span class="justify-start truncate">
+												<span class="max-w-[30ch] justify-start truncate">
 													{#each split.itemIds as itemId, j (itemId)}
 														{ctx.items.get(itemId)?.name || `#${itemId}`}
 														{#if j != split.itemIds.size - 1}

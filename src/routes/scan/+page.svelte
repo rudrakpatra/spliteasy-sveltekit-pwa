@@ -100,6 +100,7 @@
 
 							// Items
 							if (result.data.items?.length > 0 && aiPendingFields.has('items')) {
+								splits.clear();
 								items.clear();
 								for (const item of result.data.items) {
 									const itemId = CTX.generateId();

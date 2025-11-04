@@ -14,9 +14,9 @@
 				alt="Receipt"
 			/>
 		</DialogTrigger>
-		<Dialog.Content showCloseButton={false} class="p-0">
+		<Dialog.Content showCloseButton={false} class="w-fit p-0">
 			<Dialog.Close>
-				<img class="w-full rounded-md" src={ctx.ai.file.current.blobUrl} alt="Receipt" />
+				<img class="rounded-md" src={ctx.ai.file.current.blobUrl} alt="Receipt" />
 			</Dialog.Close>
 		</Dialog.Content>
 	</Dialog.Root>

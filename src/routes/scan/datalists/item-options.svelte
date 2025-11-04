@@ -8,7 +8,6 @@
 	import { generateId, getExpenseFormContext, type Id } from '../context.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import type { UserId } from '$lib/shared/schema/user';
 
 	const ctx = getExpenseFormContext();
 

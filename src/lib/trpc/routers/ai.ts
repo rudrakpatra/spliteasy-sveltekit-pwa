@@ -4,7 +4,7 @@ import { generateObject } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { GOOGLE_GENERATIVE_AI_API_KEY } from '$env/static/private';
 import { TRPCError } from '@trpc/server';
-import { protectedProcedure, t } from '../init';
+import { protectedProcedure, publicProcedure, t } from '../init';
 import { categorySchema } from '$lib/shared/category/category';
 import { currencyCodeSchema } from '$lib/shared/currency/currency';
 
@@ -40,7 +40,7 @@ const receiptAnalysisSchema = z.object({
 
 export const aiRouter = t.router({
     // Analyze receipt from image
-    analyze: protectedProcedure
+    analyze: publicProcedure
         .input(
             z.object({
                 imageUrl: z.url('Must be a valid image URL'),

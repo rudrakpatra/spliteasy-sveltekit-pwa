@@ -9,6 +9,7 @@
 	import LockSquareRoundedFilled from '@tabler/icons-svelte/icons/lock-square-rounded-filled';
 	import ItemOptions from '../datalists/item-options.svelte';
 	import { cn } from '$lib/utils';
+	import AiReceiptDialog from './ai-receipt-dialog.svelte';
 
 	const ctx = getExpenseFormContext();
 
@@ -107,7 +108,7 @@
 								type="text"
 								placeholder={ctx.remainingAmount}
 								variant="underlined"
-								class="field-sizing-content max-w-30 min-w-9 truncate text-center"
+								class="field-sizing-content min-w-9 truncate text-center"
 								autocomplete="off"
 								inputmode="numeric"
 								data-scroll-into-view="true"
@@ -127,11 +128,7 @@
 		</div>
 	{/snippet}
 	{#if ctx.ai.file.current}
-		<img
-			class="aspect-square h-32 rounded-md object-cover"
-			src={ctx.ai.file.current.blobUrl}
-			alt="Receipt"
-		/>
+		<AiReceiptDialog />
 	{/if}
 	{@render table()}
 

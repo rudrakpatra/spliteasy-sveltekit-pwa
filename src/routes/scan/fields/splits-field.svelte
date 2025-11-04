@@ -14,6 +14,8 @@
 	import EmblaScrollArea from '$lib/components/ui/embla-scroll-area/embla-scroll-area.svelte';
 	import { cn } from '$lib/utils';
 	import { evaluateAmountExpression } from '$lib/shared/schema/math';
+	import CheckboxGroup from '../checkbox-group.svelte';
+	import CheckboxButton from '../checkbox-button.svelte';
 
 	const cid = $props.id();
 
@@ -82,34 +84,51 @@
 								{/each}
 							</EmblaScrollArea>
 						</Label>
-						<div class="group grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-2">
-							{#each ctx.participants as [id, participant]}
-								{@const shareValue = split.shares.get(id)}
+						<CheckboxGroup groupId="split-group">
+							<div class="group grid grid-cols-[1fr_auto_auto] items-center gap-2 px-3 py-2">
+								{#each ctx.participants as [id, participant]}
+									{@const shareValue = split.shares.get(id)}
 
-								<label class="flex items-center gap-2" for={`${cid}.split.${splitId}.share.${id}`}>
-									<Avatar.Root class="size-9 shrink-0">
-										<Avatar.Fallback>
-											{(participant.name || id).slice(0, 1).toUpperCase()}
-										</Avatar.Fallback>
-									</Avatar.Root>
-									<span class="flex-1 font-medium">{participant.name || '@' + id}</span>
-								</label>
-								<Input
-									id={`${cid}.split.${splitId}.share.${id}`}
-									type="text"
-									placeholder={'0'}
-									value={shareValue}
-									oninput={(e) => {
-										ctx.splits.get(splitId)!.shares.set(id, e.currentTarget.value);
-									}}
-									data-scroll-into-view="true"
-									inputmode="numeric"
-									variant="underlined"
-									class="field-sizing-content min-w-9 text-center"
-									autocomplete="off"
-								/>
-							{/each}
-						</div>
+									<label
+										class="flex items-center gap-2"
+										for={`${cid}.split.${splitId}.share.${id}`}
+									>
+										<Avatar.Root class="size-9 shrink-0">
+											<Avatar.Fallback>
+												{(participant.name || id).slice(0, 1).toUpperCase()}
+											</Avatar.Fallback>
+										</Avatar.Root>
+										{#if participant.name}
+											<span class="flex-1 font-medium">{participant.name}</span>
+										{:else}
+											<span class="flex-1 font-medium text-muted-foreground">@{id}</span>
+										{/if}
+									</label>
+									<Input
+										id={`${cid}.split.${splitId}.share.${id}`}
+										type="text"
+										placeholder={'0'}
+										value={shareValue}
+										oninput={(e) => {
+											ctx.splits.get(splitId)!.shares.set(id, e.currentTarget.value);
+										}}
+										data-scroll-into-view="true"
+										inputmode="numeric"
+										variant="underlined"
+										class="field-sizing-content min-w-9 text-center"
+										autocomplete="off"
+									/>
+									<CheckboxButton
+										id={`${cid}.split.${splitId}.share.${id}`}
+										tabindex={2}
+										checked={!!shareValue}
+										onCheckedChange={(checked) => {
+											ctx.splits.get(splitId)!.shares.set(id, checked ? '1' : '');
+										}}
+									/>
+								{/each}
+							</div>
+						</CheckboxGroup>
 						<div class="px-3 pb-2">
 							<p class="text-xs text-muted-foreground">
 								{shareCount ? `${shareCount} Total shares` : 'Please check the share expressions'}
