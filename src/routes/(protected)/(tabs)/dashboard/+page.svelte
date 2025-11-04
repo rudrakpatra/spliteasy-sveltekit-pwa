@@ -8,6 +8,9 @@
 	import Plus from '@tabler/icons-svelte/icons/plus';
 	import Expense from './expense.svelte';
 	import Receipt from '@tabler/icons-svelte/icons/receipt';
+	import { Spinner } from '$lib/components/ui/spinner';
+	import * as Item from '$lib/components/ui/item';
+	import ExclaimationCircle from '@tabler/icons-svelte/icons/exclamation-circle';
 
 	let { data }: { data: PageData } = $props();
 	const api = trpc(page, data.queryClient);
@@ -27,59 +30,71 @@
 	<title>Dashboard - SplitEasy</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-2xl px-4 py-8">
-	<div class="rounded-lg border bg-card p-6 shadow-sm">
-		<div class="flex justify-between">
-			<h1 class="mb-6 text-2xl font-bold">Dashboard</h1>
-			<Button href="/expense/add" variant="ghost"><Plus /> Add</Button>
-		</div>
-		<div class="space-y-6">
-			{#if $pendingApprovalsQuery.isPending}
-				<div class="flex justify-center py-8">
-					<p class="text-muted-foreground">Loading expenses...</p>
-				</div>
-			{:else if $pendingApprovalsQuery.isError}
-				<div class="rounded-lg p-4">
-					<p class="text-destructive">Error: {$pendingApprovalsQuery.error.message}</p>
-					<Button
-						onclick={() => $pendingApprovalsQuery.refetch()}
-						class="mt-2"
-						variant="outline"
-						size="sm"
-					>
-						Retry
-					</Button>
-				</div>
-			{:else if $pendingApprovalsQuery.data?.items?.length > 0}
-				<div class="space-y-6">
-					{#each $pendingApprovalsQuery.data.items as expense (expense.id)}
-						<Expense expenseId={expense.id} />
-					{/each}
-				</div>
-			{:else}
-				<Empty.Root>
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<Receipt />
-						</Empty.Media>
-						<Empty.Title>No Expenses Yet</Empty.Title>
-						<Empty.Description>
-							You haven't created any expenses yet. Get started by creating your first expense.
-						</Empty.Description>
-					</Empty.Header>
-					<Empty.Content>
-						<div class="flex gap-2">
-							<Button href="/expense/add">Create Expense</Button>
-							<!-- <Button variant="outline">Add Expense</Button> -->
-						</div>
-					</Empty.Content>
-					<Button variant="link" class="text-muted-foreground" size="sm">
-						<span>
-							Learn More <ArrowUpRightIcon class="inline h-4 w-4" />
-						</span>
-					</Button>
-				</Empty.Root>
-			{/if}
-		</div>
-	</div>
+{#if $pendingApprovalsQuery.isPending}
+	<Empty.Root>
+		<Empty.Header>
+			<Empty.Media variant="icon">
+				<Spinner />
+			</Empty.Media>
+			<Empty.Title>Loading Expenses...</Empty.Title>
+			<Empty.Description>
+				{$pendingApprovalsQuery.status}
+			</Empty.Description>
+		</Empty.Header>
+	</Empty.Root>
+{:else if $pendingApprovalsQuery.isError}
+	<Empty.Root>
+		<Empty.Header>
+			<Empty.Media variant="icon">
+				<ExclaimationCircle />
+			</Empty.Media>
+			<Empty.Title>Error</Empty.Title>
+			<Empty.Description>
+				{$pendingApprovalsQuery.error.message}
+			</Empty.Description>
+		</Empty.Header>
+		<Empty.Content class="flex gap-2">
+			<Button onclick={() => $pendingApprovalsQuery.refetch()}>Retry</Button>
+		</Empty.Content>
+	</Empty.Root>
+{:else if $pendingApprovalsQuery.data.items.length > 0}
+	<Item.Group>
+		{#each $pendingApprovalsQuery.data.items as expense (expense.id)}
+			<Expense expenseId={expense.id} />
+		{/each}
+	</Item.Group>
+{:else}
+	<Empty.Root>
+		<Empty.Header>
+			<Empty.Media variant="icon">
+				<Receipt />
+			</Empty.Media>
+			<Empty.Title>No Expenses Yet</Empty.Title>
+			<Empty.Description>
+				You haven't created any expenses yet. Get started by creating your first expense.
+			</Empty.Description>
+		</Empty.Header>
+		<Empty.Content class="flex gap-2">
+			<Button href="/expense/add">Create Expense</Button>
+			<!-- <Button variant="outline">Add Expense</Button> -->
+		</Empty.Content>
+		<Button variant="link" class="text-muted-foreground" size="sm">
+			<span>
+				Learn More <ArrowUpRightIcon class="inline h-4 w-4" />
+			</span>
+		</Button>
+	</Empty.Root>
+{/if}
+
+<div class="fab p-4">
+	<Button href="/expense/add"><Plus /> Expense</Button>
 </div>
+
+<style>
+	.fab {
+		position: fixed;
+		position-anchor: --app-footer;
+		bottom: anchor(top);
+		right: anchor(right);
+	}
+</style>

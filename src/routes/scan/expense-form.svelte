@@ -1,31 +1,20 @@
 <script lang="ts">
-	import { getExpenseFormContext } from './context.svelte';
-	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
-	import { Spinner } from '$lib/components/ui/spinner';
-	import Plus from '@tabler/icons-svelte/icons/plus';
-
 	// import fields
 	import ReceiptField from './fields/ask-ai-field.svelte';
-	import ExpenseNameField from './fields/expense-name-field.svelte';
-	import CurrencyField from './fields/currency-field.svelte';
-	import GroupField from './fields/groups-field.svelte';
-	import PayersField from './fields/payers-field.svelte';
+	import PayersField from './fields/participants-field.svelte';
 	import ItemsField from './fields/items-field.svelte';
 	import SplitsField from './fields/splits-field.svelte';
-	import NotesField from './fields/notes-field.svelte';
-	import CategoryField from './fields/category-field.svelte';
 	import ReviewForm from './review-form.svelte';
 	import * as DataList from '$lib/components/ui/data-list';
 	import { useActiveElement } from '$lib/hooks/activeElement/active-element-context.svelte';
 	import { useIME } from '$lib/hooks/use-ime.svelte';
-	import ContextViewer from './context-viewer.svelte';
+	import CurrencyField from './fields/currency-field.svelte';
 
-	const ctx = getExpenseFormContext();
+	// const ctx = getExpenseFormContext();
 
 	// Access mutation status from form
-	const isSubmitting = $derived(ctx.submitting);
+	// const isSubmitting = $derived(ctx.submitting);
 	const activeElement = useActiveElement();
 	const ime = useIME();
 	$effect(() => {
@@ -50,34 +39,11 @@
 		</Card.Header>
 		<Card.Content class="flex-1 space-y-4">
 			<ReceiptField />
-			<ExpenseNameField />
 			<CurrencyField />
-			<GroupField />
 			<PayersField />
 			<ItemsField />
 			<SplitsField />
-			<NotesField />
-			<CategoryField />
 			<ReviewForm />
 		</Card.Content>
-
-		<Card.Footer class="flex justify-between">
-			<Button
-				type="button"
-				variant="outline"
-				onclick={() => goto('/dashboard')}
-				disabled={isSubmitting}
-			>
-				Cancel
-			</Button>
-			<Button type="button" onclick={ctx.submit} disabled={isSubmitting}>
-				{#if isSubmitting}
-					<Spinner /> Creating...
-				{:else}
-					<Plus /> Create Expense
-				{/if}
-			</Button>
-		</Card.Footer>
 	</Card.Root>
 </DataList.Root>
-<!-- <ContextViewer /> -->

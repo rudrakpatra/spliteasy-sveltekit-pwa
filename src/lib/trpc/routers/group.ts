@@ -49,8 +49,8 @@ export const groupRouter = t.router({
                     total: sql<number>`count(*) OVER ()`,
                 })
                 .from(groups)
-                .innerJoin(groupMembers, eq(groups.id, groupMembers.groupId))
-                .where(eq(groupMembers.userId, ctx.user.id))
+                .innerJoin(groupMembers, eq(groups.id, groupMembers.group_id))
+                .where(eq(groupMembers.user_id, ctx.user.id))
                 .limit(input.limit)
                 .offset(input.offset);
 
@@ -156,8 +156,8 @@ export const groupRouter = t.router({
                     member: groupMembers,
                 })
                 .from(groupMembers)
-                .innerJoin(users, eq(groupMembers.userId, users.id))
-                .where(eq(groupMembers.groupId, groupId))
+                .innerJoin(users, eq(groupMembers.user_id, users.id))
+                .where(eq(groupMembers.group_id, groupId))
                 .orderBy(users.name);
 
             const result = rows.map((row) => ({
@@ -167,7 +167,7 @@ export const groupRouter = t.router({
             console.log(result);
 
             // Verify current user is a member
-            if (!result.find((r) => r.userId === ctx.user.id)) {
+            if (!result.find((r) => r.user_id === ctx.user.id)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'Unauthorized',
@@ -255,13 +255,13 @@ export const groupRouter = t.router({
 
             // Check for pending approvals
             const pendingApprovals = await ctx.db
-                .select({ expenseId: expenseSplits.expenseId })
+                .select({ expenseId: expenseSplits.expense_id })
                 .from(expenseSplits)
                 .where(
                     and(
-                        eq(expenseSplits.groupId, groupId),
-                        eq(expenseSplits.userId, ctx.user.id),
-                        eq(expenseSplits.isApproved, false),
+                        eq(expenseSplits.group_id, groupId),
+                        eq(expenseSplits.user_id, ctx.user.id),
+                        eq(expenseSplits.is_approved, false),
                     ),
                 )
                 .limit(1);
@@ -277,8 +277,8 @@ export const groupRouter = t.router({
                 .delete(groupMembers)
                 .where(
                     and(
-                        eq(groupMembers.groupId, groupId),
-                        eq(groupMembers.userId, ctx.user.id),
+                        eq(groupMembers.group_id, groupId),
+                        eq(groupMembers.user_id, ctx.user.id),
                     ),
                 );
 
@@ -314,7 +314,7 @@ export const groupRouter = t.router({
                 .from(expenses)
                 .where(
                     and(
-                        eq(expenses.groupId, groupId),
+                        eq(expenses.group_id, groupId),
                         sql`EXISTS (
               SELECT 1 FROM expense_splits es2
               WHERE es2.expense_id = ${expenses}.id 
@@ -332,7 +332,7 @@ export const groupRouter = t.router({
             }
 
             return await ctx.db.transaction(async (tx) => {
-                await tx.delete(groupMembers).where(eq(groupMembers.groupId, groupId));
+                await tx.delete(groupMembers).where(eq(groupMembers.group_id, groupId));
                 const deleted = await tx
                     .delete(groups)
                     .where(eq(groups.id, groupId))
@@ -373,7 +373,7 @@ async function getGroupBalances(
 ): Promise<Record<string, Record<CurrencyCode, NumberString>>> {
     const rows = await db
         .select({
-            userId: expenseSplits.userId,
+            userId: expenseSplits.user_id,
             currency: expenseSplits.currency,
             balance: sql<NumberString>`SUM((${expenseSplits}.paid_amount::numeric - ${expenseSplits}.owes_amount::numeric))::text`,
         })
@@ -381,21 +381,21 @@ async function getGroupBalances(
         .innerJoin(
             groupMembers,
             and(
-                eq(groupMembers.groupId, expenseSplits.groupId),
-                eq(groupMembers.userId, expenseSplits.userId),
+                eq(groupMembers.group_id, expenseSplits.group_id),
+                eq(groupMembers.user_id, expenseSplits.user_id),
             ),
         )
         .where(
             and(
-                eq(expenseSplits.groupId, groupId),
-                eq(expenseSplits.isApproved, true),
+                eq(expenseSplits.group_id, groupId),
+                eq(expenseSplits.is_approved, true),
                 sql`NOT EXISTS (
       SELECT 1 FROM expense_splits es2
       WHERE es2.expense_id = ${expenseSplits}.expense_id AND es2.is_approved = false
     )`,
             ),
         )
-        .groupBy(expenseSplits.userId, expenseSplits.currency);
+        .groupBy(expenseSplits.user_id, expenseSplits.currency);
 
     // Must be a member to view
     if (!rows.find((r) => r.userId === userId)) {

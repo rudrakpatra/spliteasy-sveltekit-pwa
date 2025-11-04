@@ -1,5 +1,4 @@
 <script lang="ts">
-	import KeyboardAwareView from '$lib/components/ui/view/keyboard-aware-view.svelte';
 	import { getExpenseFormContext } from '../context.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import DialogTrigger from '$lib/components/ui/dialog/dialog-trigger.svelte';

@@ -5,27 +5,12 @@
 	import ArrowsSplit from '@tabler/icons-svelte/icons/arrows-split';
 	import { VIBRATE_DURATION } from '$lib/constants';
 	import { EmblaScrollArea } from '$lib/components/ui/embla-scroll-area';
-	import { generateSplitId, getExpenseFormContext, type ItemId } from '../context.svelte';
+	import { generateId, getExpenseFormContext, type Id } from '../context.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { trpc } from '$lib/trpc/client';
-	import { page } from '$app/state';
-	import { uuidSchema } from '$lib/shared/schema/uuid';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import type { UserId } from '$lib/shared/schema/user';
 
-	const api = trpc(page);
-
 	const ctx = getExpenseFormContext();
-
-	const membersQuery = $derived(
-		api.group.getMembers.createQuery(
-			{ groupId: ctx.groupId.current },
-			{
-				refetchInterval: Infinity,
-				enabled: uuidSchema.safeParse(ctx.groupId.current).success
-			}
-		)
-	);
 
 	let { open = $bindable(false), id }: { open: boolean; id: string } = $props();
 
@@ -51,7 +36,7 @@
 		},
 		{
 			icon: ArrowsSplit,
-			label: 'Split Equally',
+			label: 'Split Items',
 			get show() {
 				return Array.from(ctx.items).some(([id, item]) => item.selected);
 			},
@@ -64,50 +49,12 @@
 				e.preventDefault();
 				e.stopPropagation();
 
-				const selectedItems = new SvelteSet<ItemId>();
+				const selectedItems = new SvelteSet<Id>();
 				Array.from(ctx.items).forEach(([id, item]) => {
 					if (item.selected) selectedItems.add(id);
 				});
 
-				const shares = new SvelteMap<UserId, string>();
-				$membersQuery.data?.forEach((member) => {
-					shares.set(member.user_id, '1');
-				});
-
-				ctx.splits.set(generateSplitId(), {
-					itemIds: selectedItems,
-					shares: shares
-				});
-
-				Array.from(ctx.items).forEach(([id, item]) => {
-					ctx.items.set(id, {
-						...item,
-						selected: false
-					});
-				});
-			}
-		},
-		{
-			icon: ArrowsSplit,
-			label: 'Split by Shares',
-			get show() {
-				return Array.from(ctx.items).some(([id, item]) => item.selected);
-			},
-			onDown: (e: Event) => {
-				e.preventDefault();
-				e.stopPropagation();
-				navigator.vibrate(VIBRATE_DURATION);
-			},
-			onClick: (e: Event) => {
-				e.preventDefault();
-				e.stopPropagation();
-
-				const selectedItems = new SvelteSet<ItemId>();
-				Array.from(ctx.items).forEach(([id, item]) => {
-					if (item.selected) selectedItems.add(id);
-				});
-
-				ctx.splits.set(generateSplitId(), {
+				ctx.splits.set(generateId(), {
 					itemIds: selectedItems,
 					shares: new SvelteMap()
 				});

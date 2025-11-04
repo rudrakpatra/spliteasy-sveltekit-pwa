@@ -32,11 +32,11 @@
 		</div>
 	</header>
 
-	<main class="flex-1">
+	<main class="container mx-auto flex max-w-2xl flex-1 flex-col">
 		{@render children()}
 	</main>
 
-	<footer class="sticky right-0 bottom-0 left-0 border-t bg-card">
+	<footer id="app-footer" class="sticky right-0 bottom-0 left-0 border-t bg-card">
 		<nav class="bottom-nav-bar grid h-16 grid-cols-3 md:hidden">
 			<a href="/dashboard">
 				<Receipt />
@@ -56,5 +56,8 @@
 		& > * {
 			@apply grid place-content-center;
 		}
+	}
+	#app-footer {
+		anchor-name: --app-footer;
 	}
 </style>

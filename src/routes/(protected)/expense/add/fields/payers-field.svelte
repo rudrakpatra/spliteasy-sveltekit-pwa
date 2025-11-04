@@ -31,14 +31,16 @@
 		// Match id={`${cid}.payer.${user.id}`} using regex
 		return current?.id.match(new RegExp(`^${cid}\\.payer\\..+$`)) !== null || false;
 	});
-	const { data, isLoading, isSuccess } = $derived($membersQuery);
+	const { data, isPending, isSuccess } = $derived($membersQuery);
 </script>
 
 <div class="space-y-2">
-	<Label>Paid by</Label>
-	{#if isLoading}
-		<Skeleton class="h-9 w-full" />
+	{#if isPending}
+		<Skeleton class="h-4 w-20" />
+		<Skeleton class="h-12 w-full" />
+		<Skeleton class="h-4 w-1/3" />
 	{:else if isSuccess}
+		<Label>Paid by</Label>
 		<section
 			class="group grid grid-cols-[1fr_auto] items-center gap-2 rounded-md px-3 py-2 outline outline-border"
 		>
@@ -75,8 +77,8 @@
 				/>
 			{/each}
 		</section>
+		<p class="text-xs text-muted-foreground">Choose who paid for this expense</p>
 	{/if}
-	<p class="text-xs text-muted-foreground">Choose who paid for this expense</p>
 </div>
 
 <Calculator open={calculatorOpen} id={cid} />

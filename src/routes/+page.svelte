@@ -10,6 +10,9 @@
 		<a href="/dashboard" data-sveltekit-reload>
 			<Button variant="default">Get Started</Button>
 		</a>
+		<a href="/scan" data-sveltekit-reload>
+			<Button variant="default">Scan Bill</Button>
+		</a>
 	</main>
 	<footer class="p-2 text-center">
 		<p>&copy; {new Date().getFullYear()} SplitEasy. All rights reserved.</p>

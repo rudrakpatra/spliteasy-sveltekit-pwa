@@ -14,13 +14,13 @@ export type PaginatedResult<T> = {
     hasMore: boolean;
 };
 
-export type GroupId = typeof expenses.groupId | typeof groupMembers.groupId;
+export type GroupId = typeof expenses.group_id | typeof groupMembers.group_id;
 
 export function sqlIsGroupMember(groupIdSql: GroupId, userId: UserId) {
     return sql`EXISTS (
     SELECT 1 FROM ${groupMembers}
-    WHERE ${groupMembers.groupId} = ${groupIdSql}
-      AND ${groupMembers.userId} = ${userId}
+    WHERE ${groupMembers.group_id} = ${groupIdSql}
+      AND ${groupMembers.user_id} = ${userId}
   )`;
 }
 
@@ -34,8 +34,8 @@ export async function ensureGroupMember(
         .from(groupMembers)
         .where(
             and(
-                eq(groupMembers.groupId, groupId),
-                eq(groupMembers.userId, userId),
+                eq(groupMembers.group_id, groupId),
+                eq(groupMembers.user_id, userId),
             ),
         )
         .limit(1);
@@ -55,9 +55,9 @@ export async function getGroupMemberIds(
     groupId: Uuid,
 ): Promise<UserId[]> {
     const rows = await ctx
-        .select({ userId: groupMembers.userId })
+        .select({ userId: groupMembers.user_id })
         .from(groupMembers)
-        .where(eq(groupMembers.groupId, groupId));
+        .where(eq(groupMembers.group_id, groupId));
 
     return rows.map((r: { userId: UserId }) => r.userId);
 }

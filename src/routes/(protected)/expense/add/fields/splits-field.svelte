@@ -34,6 +34,12 @@
 	$effect(() => {
 		const splits = ctx.splits;
 		for (const [sid, split] of splits) {
+			//remove item ids which dont exists
+			split.itemIds.forEach((itemId) => {
+				if (!ctx.items.has(itemId)) {
+					split.itemIds.delete(itemId);
+				}
+			});
 			//if split has no items, remove it
 			if (split.itemIds.size === 0) {
 				ctx.splits.delete(sid);
@@ -47,107 +53,102 @@
 		// Match id={`${cid}.split.${splitId}.share.${user.id}`} using regex
 		return current?.id.match(new RegExp(`^${cid}\\.split\\..+\\.share\\..+$`)) !== null || false;
 	});
-	const { data: members, isLoading, isSuccess, error } = $derived($membersQuery);
+	const { data: members, isPending, isSuccess, error } = $derived($membersQuery);
 </script>
 
 <div class="space-y-2">
-	<Label>Splits</Label>
-	{#if isLoading}
-		<Skeleton class="h-9 w-full" />
+	{#if isPending && !ctx.groupId.current}
+		<Skeleton class="h-4 w-12" />
+		<Skeleton class="h-32 w-full" />
+		<Skeleton class="h-4 w-1/3" />
 	{:else if isSuccess}
+		<Label>Splits</Label>
 		<div class="space-y-2">
-			{#each ctx.splits as [splitId, split] (splitId)}
-				{@const shareCount = Array.from(split.shares.values()).reduce((sum, s) => {
-					const val = evaluateAmountExpression(s) || 0;
-					return sum + val;
-				}, 0)}
+			{#if ctx.splits.size === 0}
 				<div class={cn(ctx.ai.pendingFields.has('splits') && 'ai-pending')}>
 					<section class="space-y-2 rounded-md outline outline-border">
-						<Label class="px-3 py-2 pb-0">
-							<EmblaScrollArea class="w-full" containerClass="gap-2">
-								{#each split.itemIds as itemId (itemId)}
-									<Badge
-										class="pr-1"
-										type="button"
-										onclick={() => {
-											// Remove item from the split - immutable update
-											ctx.splits.get(splitId)!.itemIds.delete(itemId);
-										}}
-										variant="outline"
-									>
-										<span class="max-w-[16ch] justify-start truncate">
-											{ctx.items.get(itemId)?.name || `#${itemId}`}
-										</span>
-										<X />
-									</Badge>
-								{/each}
-							</EmblaScrollArea>
-						</Label>
-						<div class="group grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-2">
-							{#each members as { user }}
-								{@const shareValue = split.shares.get(user.id)}
-
-								<label
-									class="flex items-center gap-2"
-									for={`${cid}.split.${splitId}.share.${user.id}`}
-								>
-									<Avatar.Root class="size-9 shrink-0">
-										<Avatar.Image src={user.img} alt={user.name} />
-										<Avatar.Fallback>
-											{user.name.slice(0, 1).toUpperCase()}
-										</Avatar.Fallback>
-									</Avatar.Root>
-									<span class="flex-1 font-medium">{user.name}</span>
-								</label>
-								<Input
-									id={`${cid}.split.${splitId}.share.${user.id}`}
-									type="text"
-									placeholder={'0'}
-									value={shareValue}
-									oninput={(e) => {
-										ctx.splits.get(splitId)!.shares.set(user.id, e.currentTarget.value);
-									}}
-									onpointerdown={(e) => {
-										if (shareValue === ' ' || !shareValue) {
-											e.preventDefault();
-										}
-									}}
-									onfocus={(e) => {
-										if (shareValue === ' ' || !shareValue) {
-											ctx.splits.get(splitId)!.shares.set(user.id, '1');
-											//prevent focus from happening
-											e.preventDefault();
-											e.stopPropagation();
-										} else {
-											e.currentTarget.select();
-										}
-									}}
-									data-scroll-into-view={shareValue ? 'true' : 'false'}
-									inputmode={shareValue ? 'numeric' : 'none'}
-									variant="underlined"
-									class="field-sizing-content min-w-9 text-center"
-									autocomplete="off"
-								/>
-							{/each}
-						</div>
-						<div class="px-3 pb-2">
-							<p class="text-xs text-muted-foreground">
-								{shareCount ? `${shareCount} Total shares` : 'Please check the share expressions'}
-							</p>
-						</div>
+						<div class="px-3 py-2 text-muted-foreground">No Splits Created</div>
 					</section>
 				</div>
-			{/each}
+			{:else}
+				{#each ctx.splits as [splitId, split] (splitId)}
+					{@const shareCount = Array.from(split.shares.values()).reduce((sum, s) => {
+						const val = evaluateAmountExpression(s) || 0;
+						return sum + val;
+					}, 0)}
+					<div class={cn(ctx.ai.pendingFields.has('splits') && 'ai-pending')}>
+						<section class="space-y-2 rounded-md outline outline-border">
+							<Label class="px-3 py-2 pb-0">
+								<EmblaScrollArea class="w-full" containerClass="gap-2">
+									{#each split.itemIds as itemId (itemId)}
+										<Badge
+											class="pr-1"
+											type="button"
+											onclick={() => {
+												// Remove item from the split - immutable update
+												ctx.splits.get(splitId)!.itemIds.delete(itemId);
+											}}
+											variant="outline"
+										>
+											<span class="max-w-[16ch] justify-start truncate">
+												{ctx.items.get(itemId)?.name || `#${itemId}`}
+											</span>
+											<X />
+										</Badge>
+									{/each}
+								</EmblaScrollArea>
+							</Label>
+							<div class="group grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-2">
+								{#each members as { user }}
+									{@const shareValue = split.shares.get(user.id)}
+
+									<label
+										class="flex items-center gap-2"
+										for={`${cid}.split.${splitId}.share.${user.id}`}
+									>
+										<Avatar.Root class="size-9 shrink-0">
+											<Avatar.Image src={user.img} alt={user.name} />
+											<Avatar.Fallback>
+												{user.name.slice(0, 1).toUpperCase()}
+											</Avatar.Fallback>
+										</Avatar.Root>
+										<span class="flex-1 font-medium">{user.name}</span>
+									</label>
+									<Input
+										id={`${cid}.split.${splitId}.share.${user.id}`}
+										type="text"
+										placeholder={'0'}
+										value={shareValue}
+										oninput={(e) => {
+											ctx.splits.get(splitId)!.shares.set(user.id, e.currentTarget.value);
+										}}
+										data-scroll-into-view="true"
+										inputmode="numeric"
+										variant="underlined"
+										class="field-sizing-content min-w-9 text-center"
+										autocomplete="off"
+									/>
+								{/each}
+							</div>
+							<div class="px-3 pb-2">
+								<p class="text-xs text-muted-foreground">
+									{shareCount ? `${shareCount} Total shares` : 'Please check the share expressions'}
+								</p>
+							</div>
+						</section>
+					</div>
+				{/each}
+			{/if}
 		</div>
+		<p class="text-xs text-muted-foreground">
+			{#if ctx.splits.size > 0}
+				{ctx.splits.size} Total splits
+			{:else}
+				Select items and split them by shares
+			{/if}
+		</p>
 	{:else if error}
 		<div class="text-destructive">Error loading members</div>
 	{/if}
-	<p class="text-xs text-muted-foreground">
-		{#if ctx.splits.size > 0}
-			{ctx.splits.size} Total splits
-		{:else}
-			Select items and split them by shares
-		{/if}
-	</p>
 </div>
 <Calculator open={calculatorOpen} id={cid} />

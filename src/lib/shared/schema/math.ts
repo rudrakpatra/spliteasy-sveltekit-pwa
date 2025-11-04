@@ -16,6 +16,7 @@ export const numberStringSchema = z
 export const amountExpressionSchema = z
     .string()
     .refine((value) => {
+        if (value == "") return true;
         try {
             const result = evaluate(value);
             return typeof result === 'number' && !isNaN(result);

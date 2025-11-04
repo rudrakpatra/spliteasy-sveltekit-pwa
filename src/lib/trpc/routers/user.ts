@@ -52,15 +52,15 @@ export const userRouter = t.router({
         .query(async ({ ctx }) => {
             const rows = await ctx.db
                 .select({
-                    groupId: expenseSplits.groupId,
+                    groupId: expenseSplits.group_id,
                     currency: expenseSplits.currency,
                     balance: sql<NumberString>`SUM((${expenseSplits}.paid_amount::numeric - ${expenseSplits}.owes_amount::numeric))::text`,
                 })
                 .from(expenseSplits)
                 .where(
                     and(
-                        eq(expenseSplits.userId, ctx.user.id),
-                        eq(expenseSplits.isApproved, true),
+                        eq(expenseSplits.user_id, ctx.user.id),
+                        eq(expenseSplits.is_approved, true),
                         sql`NOT EXISTS (
               SELECT 1 FROM expense_splits es2
               WHERE es2.expense_id = ${expenseSplits}.expense_id 
@@ -68,7 +68,7 @@ export const userRouter = t.router({
             )`,
                     ),
                 )
-                .groupBy(expenseSplits.groupId, expenseSplits.currency);
+                .groupBy(expenseSplits.group_id, expenseSplits.currency);
 
             const result: Record<string, Record<CurrencyCode, NumberString>> = {};
             for (const row of rows) {
@@ -100,7 +100,7 @@ export const userRouter = t.router({
                     total: sql<number>`count(*) OVER ()`,
                 })
                 .from(expenses)
-                .leftJoin(expenseSplits, eq(expenseSplits.expenseId, expenses.id))
+                .leftJoin(expenseSplits, eq(expenseSplits.expense_id, expenses.id))
                 .where(
                     sql`EXISTS (
             SELECT 1 FROM expense_splits es
@@ -110,7 +110,7 @@ export const userRouter = t.router({
           )`,
                 )
                 .groupBy(expenses.id)
-                .orderBy(desc(expenses.updatedAt))
+                .orderBy(desc(expenses.updated_at))
                 .limit(input.limit)
                 .offset(input.offset);
 

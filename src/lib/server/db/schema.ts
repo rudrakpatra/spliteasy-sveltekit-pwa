@@ -26,8 +26,8 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 256 }).$type<Email>().notNull().unique(),
   email_verified: boolean('email_verified').notNull().default(false),
   img: text('img'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow()
     .$onUpdateFn(() => new Date()),
@@ -38,8 +38,8 @@ export const groups = pgTable('groups', {
   id: uuid('id').$type<Uuid>().defaultRandom().primaryKey(),
   name: varchar('name', { length: 128 }).notNull(),
   img: text('img').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
@@ -49,16 +49,16 @@ export const groups = pgTable('groups', {
 export const groupMembers = pgTable(
   'group_members',
   {
-    groupId: uuid('group_id').$type<Uuid>()
+    group_id: uuid('group_id').$type<Uuid>()
       .notNull()
       .references(() => groups.id, { onDelete: 'restrict' }),
-    userId: varchar('user_id', { length: 256 }).$type<UserId>()
+    user_id: varchar('user_id', { length: 256 }).$type<UserId>()
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
-    joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
-    metaData: jsonb('meta_data').$type<{}>().notNull().default({}),
+    joined_at: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
+    meta_data: jsonb('meta_data').$type<{}>().notNull().default({}),
   },
-  (table) => [primaryKey({ columns: [table.groupId, table.userId] })],
+  (table) => [primaryKey({ columns: [table.group_id, table.user_id] })],
 );
 
 // Expenses
@@ -66,19 +66,19 @@ export const expenses = pgTable(
   'expenses',
   {
     id: uuid('id').$type<Uuid>().defaultRandom().primaryKey(),
-    groupId: uuid('group_id').$type<Uuid>()
+    group_id: uuid('group_id').$type<Uuid>()
       .notNull()
       .references(() => groups.id),
     name: varchar('name', { length: 128 }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
-    updatedBy: varchar('updated_by', { length: 256 })
+    updated_by: varchar('updated_by', { length: 256 })
       .notNull()
       .references(() => users.id),
-    isPayment: boolean('is_payment').notNull().default(false),
+    is_payment: boolean('is_payment').notNull().default(false),
     metadata: jsonb('metadata').$type<{
       category: Category["code"] | null;
       notes: string | null;
@@ -86,8 +86,8 @@ export const expenses = pgTable(
     }>(),
   },
   (table) => [
-    index('expenses_group_id_idx').using('hash', table.groupId),
-    index('expenses_updated_at_idx').on(table.updatedAt),
+    index('expenses_group_id_idx').using('hash', table.group_id),
+    index('expenses_updated_at_idx').on(table.updated_at),
   ],
 );
 
@@ -95,27 +95,27 @@ export const expenses = pgTable(
 export const expenseSplits = pgTable(
   'expense_splits',
   {
-    expenseId: uuid('expense_id').$type<Uuid>()
+    expense_id: uuid('expense_id').$type<Uuid>()
       .notNull()
       .references(() => expenses.id, { onDelete: 'cascade' }),
-    userId: varchar('user_id', { length: 256 }).$type<UserId>()
+    user_id: varchar('user_id', { length: 256 }).$type<UserId>()
       .notNull()
       .references(() => users.id),
-    groupId: uuid('group_id').$type<Uuid>()
+    group_id: uuid('group_id').$type<Uuid>()
       .notNull()
       .references(() => groups.id),
     currency: varchar('currency', { length: 8 }).notNull().$type<CurrencyCode>(),
-    owesAmount: decimal('owes_amount').notNull().$type<NumberString>(),
-    paidAmount: decimal('paid_amount').notNull().$type<NumberString>(),
-    isApproved: boolean('is_approved').notNull().default(false),
-    approvalTime: timestamp('approval_time', { withTimezone: true })
+    owes_amount: decimal('owes_amount').notNull().$type<NumberString>(),
+    paid_amount: decimal('paid_amount').notNull().$type<NumberString>(),
+    is_approved: boolean('is_approved').notNull().default(false),
+    approval_time: timestamp('approval_time', { withTimezone: true })
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    primaryKey({ columns: [table.expenseId, table.userId] }),
-    index('expense_splits_group_id_idx').using('hash', table.groupId),
+    primaryKey({ columns: [table.expense_id, table.user_id] }),
+    index('expense_splits_group_id_idx').using('hash', table.group_id),
     index('expense_splits_currency_idx').using('hash', table.currency),
-    index('expense_splits_is_approved_idx').on(table.isApproved),
+    index('expense_splits_is_approved_idx').on(table.is_approved),
   ],
 );
 
@@ -135,12 +135,12 @@ export const groupsSelectSchema = createSelectSchema(groups).extend({
 })
 
 export const groupMembersInsertSchema = createInsertSchema(groupMembers).extend({
-  groupId: uuidSchema,
-  userId: userIdSchema,
+  group_id: uuidSchema,
+  user_id: userIdSchema,
 })
 export const groupMembersSelectSchema = createSelectSchema(groupMembers).extend({
-  groupId: uuidSchema,
-  userId: userIdSchema,
+  group_id: uuidSchema,
+  user_id: userIdSchema,
 })
 
 export const expensesInsertSchema = createInsertSchema(expenses).extend({
@@ -151,20 +151,20 @@ export const expensesSelectSchema = createSelectSchema(expenses).extend({
 })
 
 export const expenseSplitsInsertSchema = createInsertSchema(expenseSplits).extend({
-  expenseId: uuidSchema,
-  userId: userIdSchema,
-  groupId: uuidSchema,
+  expense_id: uuidSchema,
+  user_id: userIdSchema,
+  group_id: uuidSchema,
   currency: currencyCodeSchema,
-  owesAmount: numberStringSchema,
-  paidAmount: numberStringSchema,
+  owes_amount: numberStringSchema,
+  paid_amount: numberStringSchema,
 });
 export const expenseSplitsSelectSchema = createSelectSchema(expenseSplits).extend({
-  expenseId: uuidSchema,
-  userId: userIdSchema,
-  groupId: uuidSchema,
+  expense_id: uuidSchema,
+  user_id: userIdSchema,
+  group_id: uuidSchema,
   currency: currencyCodeSchema,
-  owesAmount: numberStringSchema,
-  paidAmount: numberStringSchema,
+  owes_amount: numberStringSchema,
+  paid_amount: numberStringSchema,
 });
 
 export type SelectUser = typeof users.$inferSelect;

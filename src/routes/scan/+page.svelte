@@ -2,39 +2,21 @@
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/trpc/client';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import * as CTX from './context.svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import ExpenseForm from './expense-form.svelte';
-	import GroupChangeDialog from './group-change-dialog.svelte';
 	import { CURRENCY_MAP, type CurrencyCode } from '$lib/shared/currency/currency-codes';
-	import type { Uuid } from '$lib/shared/schema/uuid';
-	import type { UserId } from '$lib/shared/schema/user';
-	import { categorySchema, type CategoryCode } from '$lib/shared/category/category';
 	import { currencyCodeSchema } from '$lib/shared/currency/currency';
-	import { createExpenseProposalSchema } from '$lib/shared/schema/expense';
-	import { generateItemId, generateSplitId } from './context.svelte';
+	import { createOneTimeExpenseProposalSchema } from '$lib/shared/schema/expense';
 	import { evaluateAmountExpression } from '$lib/shared/schema/math';
 
 	let { data }: { data: PageData } = $props();
 
 	// Setup tRPC
 	const api = trpc(page, data.queryClient);
-	const utils = api.createUtils();
 
 	const aiAnalyzeMutation = api.ai.analyze.createMutation();
-
-	// Setup mutation
-	const createExpense = api.expense.insert.createMutation({
-		onSuccess: (expense) => {
-			utils.expense.getProposed.invalidate();
-			goto(`/expense/${expense.id}`);
-		},
-		onError: (error) => {
-			toast.error('Failed to create expense', { description: error.message });
-		}
-	});
 
 	// AI/Receipt state
 	let aiPendingFields = $state<SvelteSet<CTX.AnalyzeDataKey>>(new SvelteSet());
@@ -43,20 +25,45 @@
 	let receiptPrompt = $state('');
 
 	// Form state
-	let formName = $state('');
-	let formNotes = $state('');
-	let formCategoryCode = $state<CategoryCode>('OTHER');
 	let formCurrency = $state<CurrencyCode | undefined>(undefined);
-	let formGroupId = $state<Uuid | undefined>(undefined);
-
-	// Group state
-	let showGroupChangeDialog = $state(false);
-	let pendingGroupId = $state<Uuid | undefined>(undefined);
 
 	// Collections
-	const payers = $state(new SvelteMap<UserId, CTX.Payer>());
-	const items = $state(new SvelteMap<CTX.ItemId, CTX.Item>());
-	const splits = $state(new SvelteMap<CTX.SplitId, CTX.Split>());
+	const participants = $state(
+		new SvelteMap<CTX.Id, CTX.Participant>([
+			[
+				CTX.generateId(),
+				{
+					name: '',
+					amount: ''
+				}
+			]
+		])
+	);
+	const itemId = CTX.generateId();
+	const items = $state(
+		new SvelteMap<CTX.Id, CTX.Item>([
+			[
+				itemId,
+				{
+					name: '',
+					amount: '',
+					selected: false
+				}
+			]
+		])
+	);
+
+	const splits = $state(
+		new SvelteMap<CTX.Id, CTX.Split>([
+			[
+				CTX.generateId(),
+				{
+					itemIds: new SvelteSet([itemId]),
+					shares: new SvelteMap()
+				}
+			]
+		])
+	);
 
 	function setReceiptFile(file: File | null) {
 		if (receiptBlobUrl) {
@@ -84,9 +91,6 @@
 						onSuccess: (result) => {
 							// Apply AI updates
 
-							// Name
-							if (result.data.name && aiPendingFields.has('name')) formName = result.data.name;
-
 							// Currency
 							if (
 								currencyCodeSchema.safeParse(result.data.currencyCode).success &&
@@ -94,22 +98,11 @@
 							)
 								formCurrency = result.data.currencyCode;
 
-							// Category
-							if (
-								result.data.categoryCode &&
-								categorySchema.safeParse(result.data.categoryCode).success &&
-								aiPendingFields.has('categoryCode')
-							)
-								formCategoryCode = result.data.categoryCode;
-
-							// Notes
-							if (result.data.notes && aiPendingFields.has('notes')) formNotes = result.data.notes;
-
 							// Items
 							if (result.data.items?.length > 0 && aiPendingFields.has('items')) {
 								items.clear();
 								for (const item of result.data.items) {
-									const itemId = CTX.generateItemId();
+									const itemId = CTX.generateId();
 									items.set(itemId, {
 										name: item.name,
 										amount: item.amount,
@@ -162,57 +155,6 @@
 		$aiAnalyzeMutation.reset();
 	}
 
-	function handleGroupChange(newGroupId: Uuid) {
-		// Early return if selecting the same group
-		if (formGroupId === newGroupId) {
-			return;
-		}
-
-		const hasData = payers.size > 0 || items.size > 0 || splits.size > 0;
-
-		// Switch with confirmation dialog
-		if (hasData && formGroupId) {
-			pendingGroupId = newGroupId;
-			showGroupChangeDialog = true;
-		} else {
-			applyGroupChange(newGroupId);
-		}
-	}
-
-	function applyGroupChange(newGroupId: Uuid) {
-		formGroupId = newGroupId;
-
-		// Clear all data
-		payers.clear();
-		items.clear();
-		splits.clear();
-
-		const itemId = generateItemId();
-
-		// add an item and a split
-		items.set(itemId, {
-			name: '',
-			amount: '',
-			selected: false
-		});
-		splits.set(generateSplitId(), {
-			itemIds: new SvelteSet([itemId]),
-			shares: new SvelteMap()
-		});
-
-		// Reset form
-		formName = '';
-		formNotes = '';
-
-		showGroupChangeDialog = false;
-		pendingGroupId = undefined;
-	}
-
-	function cancelGroupChange() {
-		showGroupChangeDialog = false;
-		pendingGroupId = undefined;
-	}
-
 	// Set context
 	CTX.setExpenseFormContext({
 		ai: {
@@ -241,15 +183,6 @@
 			analyze: analyzeReceipt,
 			cancel: cancelAnalysis
 		},
-		name: {
-			get current() {
-				return formName;
-			},
-			set: (value: string) => {
-				aiPendingFields.delete('name');
-				formName = value;
-			}
-		},
 		currency: {
 			get current() {
 				return formCurrency;
@@ -262,13 +195,7 @@
 				formCurrency = value;
 			}
 		},
-		groupId: {
-			get current() {
-				return formGroupId ?? ('' as Uuid);
-			},
-			set: handleGroupChange
-		},
-		payers,
+		participants,
 		items,
 		get remainingAmount() {
 			const filledCount = Array.from(items.values()).filter((item) => item.amount !== '').length;
@@ -277,49 +204,23 @@
 				(acc, item) => acc + (evaluateAmountExpression(item.amount) || 0),
 				0
 			);
-			const payerAmount = Array.from(payers.values()).reduce(
-				(acc, payer) => acc + (evaluateAmountExpression(payer.amount) || 0),
+			const participantAmount = Array.from(participants.values()).reduce(
+				(acc, participant) => acc + (evaluateAmountExpression(participant.amount) || 0),
 				0
 			);
 			const digits = formCurrency ? (CURRENCY_MAP.get(formCurrency)?.digits ?? 2) : 2;
-			const remainingAmount = (payerAmount - itemAmount) / unfilledCount;
+			const remainingAmount = (participantAmount - itemAmount) / unfilledCount;
 			return isNaN(remainingAmount) || !isFinite(remainingAmount)
 				? (0).toFixed(digits)
 				: remainingAmount.toFixed(digits);
 		},
 		splits,
-		notes: {
-			get current() {
-				return formNotes;
-			},
-			set: (value: string) => {
-				aiPendingFields.delete('notes');
-				formNotes = value;
-			}
-		},
-		categoryCode: {
-			get current() {
-				return formCategoryCode;
-			},
-			set: (value: CategoryCode) => {
-				aiPendingFields.delete('categoryCode');
-				formCategoryCode = value;
-			}
-		},
-		get submitting() {
-			return $createExpense.isPending;
-		},
 		get parsed() {
-			return createExpenseProposalSchema.safeParse({
-				name: formName,
-				groupId: formGroupId,
+			return createOneTimeExpenseProposalSchema.safeParse({
 				currency: formCurrency,
 				payers: Array.from(
-					payers.entries().map(([k, v]) => ({ userId: k, amountExpression: v.amount }))
+					participants.entries().map(([k, v]) => ({ userId: k, amountExpression: v.amount }))
 				),
-				category: formCategoryCode,
-				notes: formNotes,
-				receiptImageUrl: receiptBlobUrl,
 				items: Array.from(
 					items.entries().map(([k, v]) => ({
 						id: k,
@@ -337,14 +238,6 @@
 					}))
 				)
 			});
-		},
-		get submit() {
-			return () => {
-				if (this.parsed.success) {
-					console.log(this.parsed.data);
-					$createExpense.mutate(this.parsed.data);
-				}
-			};
 		}
 	});
 
@@ -354,13 +247,7 @@
 </script>
 
 <svelte:head>
-	<title>Create Expense - SplitEasy</title>
+	<title>Create One Time Expense - SplitEasy</title>
 </svelte:head>
 
 <ExpenseForm />
-
-<GroupChangeDialog
-	bind:open={showGroupChangeDialog}
-	onConfirm={() => applyGroupChange(pendingGroupId!)}
-	onCancel={cancelGroupChange}
-/>
